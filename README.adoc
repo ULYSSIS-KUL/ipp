@@ -1,10 +1,7 @@
-= The ULYSSIS 24h run system (currently nameless)
+= i++
 
 TODO: Insert background info and project info for people
       who have never heard of it, should we open source it
-
-NOTE: Because of the possible plans to open source this,
-      use English everywhere, not Dutch
 
 == Building
 
@@ -23,7 +20,7 @@ but these aren't:
 
 This is a Java 8 project, so make sure that either your default
 Java SDK version is set to Java 8, or set Gradle to use Java 8 by
-creating a file called +gradle.properties+ in the +Telsysteem+ directory:
+creating a file called +gradle.properties+:
 
 gradle.properties
 ----
@@ -36,8 +33,7 @@ You probably already have git installed, because you checked this out. This proj
 has a submodule, so if you didn't do a recursive clone, you'll need to perform
 the following ritual to get started:
 
- git submodule init
- git submodule update
+ git submodule update --init --recursive
 
 The submodules are updated as part of the +updateSubmodules+ task, which
 is run by default, so you don't need to worry about updating that. Note
@@ -66,13 +62,6 @@ https://github.com/ServiceStack/redis-windows[get a binary build here].
 TODO: Make the test port configurable, or choose one that's free at random
 
 === How to build
-
-JWt is a submodule of this project, if you didn't do a recursive clone, then
-initialize the submodules with +git submodule init+ and +git submodule update+.
-
-After that you don't need to update the submodules anymore, because the gradle
-task +updateSubmodules+ -- which is run by default if you just run +./gradlew+ -- will
-take care of that.
 
 All of the tests are run automatically, the source compiled and installed with a simple:
 

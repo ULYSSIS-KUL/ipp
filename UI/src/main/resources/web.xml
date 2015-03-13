@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE web-app PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" "http://java.sun.com/dtd/web-app_2_3.dtd">
+
+<web-app>
+    <listener>
+        <listener-class>eu.webtoolkit.jwt.ServletInit</listener-class>
+    </listener>
+    <session-config>
+        <tracking-mode>URL</tracking-mode>
+    </session-config>
+    <servlet>
+        <servlet-name>UIServlet</servlet-name>
+        <display-name>CountingSystem WebUI</display-name>
+        <description>CountingSystem WebUI</description>
+        <servlet-class>org.ulyssis.ipp.ui.UIServlet</servlet-class>
+        <async-supported>true</async-supported>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UIServlet</servlet-name>
+        <url-pattern>/ui/*</url-pattern>
+    </servlet-mapping>
+</web-app>

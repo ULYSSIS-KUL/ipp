@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration shutdownHook="disable">
+    <Appenders>
+        <Console name="STDERR" target="SYSTEM_ERR">
+            <PatternLayout pattern="%d %-5p [%t] %c (%F:%L) - %m%n" />
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Logger name="org.llrp" level="warn">
+          <AppenderRef ref="STDERR" />
+        </Logger>
+        <Logger name="org.apache.mina" level="warn">
+          <AppenderRef ref="STDERR" />
+        </Logger>
+        <Logger name="eu.webtoolkit" level="info">
+          <AppenderRef ref="STDERR" />
+        </Logger>
+        <Root level="debug">
+            <AppenderRef ref="STDERR" />
+        </Root>
+    </Loggers>
+</Configuration>

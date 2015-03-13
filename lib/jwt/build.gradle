@@ -1,0 +1,3 @@
+ant {
+	importBuild('git/build.xml')
+}

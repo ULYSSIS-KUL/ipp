@@ -1,0 +1,72 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+
+defaultTasks 'updateSubmodules', 'lib/jwt:dist', 'check', 'installApp', 'war', 'alljavadoc'
+
+task updateSubmodules(type: Exec) {
+	commandLine 'git', 'submodule', 'update'
+}
+
+idea {
+    project {
+        jdkName = '1.8'
+        languageLevel = '1.8'
+    }
+}
+
+subprojects {
+    if (name == 'Processor' || name == 'Reader' || name == 'UI' || name == 'shared') {
+        apply plugin: 'java'
+
+        sourceCompatibility = '1.8'
+        version = '0.1'
+
+        repositories {
+            mavenCentral()
+        }
+
+        dependencies {
+            // Testing dependencies
+            // JUnit, duh
+            testCompile group: 'junit', name: 'junit', version: '4.+'
+            // Hamcrest provides assertThat
+            testCompile group: 'org.hamcrest', name: 'hamcrest-all', version: '1.+'
+            // Shazamcrest provides sameBeanAs
+            testCompile group: 'com.shazam', name: 'shazamcrest', version: '0.+'
+            // Mockito for mocking
+            testCompile group: 'org.mockito', name: 'mockito-all', version: '1.+'
+            // Hamcrest-JSON provides sameJson
+            testCompile group: 'uk.co.datumedge', name: 'hamcrest-json', version: '0.+'
+        }
+    }
+}
+
+def exportedProjects = [
+    ":shared",
+    ":Processor",
+    ":Reader"
+]
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    asciidoclet
+}
+
+dependencies {
+    asciidoclet 'org.asciidoctor:asciidoclet:0.+'
+}
+
+task alljavadoc(type: Javadoc) {
+    source exportedProjects.collect { project(it).sourceSets.main.allJava }
+    destinationDir = file("${buildDir}/doc/javadoc");
+    classpath = files(exportedProjects.collect { project(it).sourceSets.main.compileClasspath })
+}
+
+alljavadoc {
+    options.docletpath = configurations.asciidoclet.files.asType(List)
+    options.doclet = 'org.asciidoctor.Asciidoclet'
+    options.addStringOption('include-basedir', "${projectDir}")
+}

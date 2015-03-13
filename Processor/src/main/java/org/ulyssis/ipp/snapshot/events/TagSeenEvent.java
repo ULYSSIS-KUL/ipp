@@ -1,0 +1,80 @@
+package org.ulyssis.ipp.snapshot.events;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ulyssis.ipp.snapshot.Snapshot;
+import org.ulyssis.ipp.snapshot.TeamState;
+import org.ulyssis.ipp.snapshot.TeamStates;
+import org.ulyssis.ipp.updates.TagUpdate;
+import org.ulyssis.ipp.TagId;
+
+import java.time.Instant;
+import java.util.Optional;
+
+@JsonTypeName("TagSeen")
+public final class TagSeenEvent extends Event {
+    private static final Logger LOG = LogManager.getLogger(TagSeenEvent.class);
+
+    private TagId tag;
+    private int readerId;
+
+    @JsonCreator
+    public TagSeenEvent(
+            @JsonProperty("time") Instant time,
+            @JsonProperty("tag") TagId tag,
+            @JsonProperty("readerId") int readerId) {
+        super(time);
+        this.tag = tag;
+        this.readerId = readerId;
+    }
+
+    public TagSeenEvent(TagUpdate update) {
+        this(update.getUpdateTime(), update.getTag(), update.getReaderId());
+    }
+
+    public TagId getTag() {
+        return tag;
+    }
+
+    private void setTag(TagId tag) {
+        this.tag = tag;
+    }
+
+    public int getReaderId() {
+        return readerId;
+    }
+
+    public Snapshot apply(Snapshot snapshot) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Applying TagSeenEvent for tag {}, reader id {}", tag, readerId);
+        }
+        if (snapshot.getStartTime().isBefore(getTime()) &&
+                snapshot.getEndTime().isAfter(getTime())) {
+            Optional<Integer> teamNb = snapshot.getTeamTagMap().tagToTeam(tag);
+            if (teamNb.isPresent()) {
+                Optional<TeamState> teamState = snapshot.getTeamStates().getStateForTeam(teamNb.get());
+                TeamState newTeamState;
+                if (teamState.isPresent()) {
+                    newTeamState = teamState.get().addTagSeenEvent(this);
+                } else {
+                    newTeamState = (new TeamState()).addTagSeenEvent(this);
+                }
+                TeamStates newTeamStates = snapshot.getTeamStates().setStateForTeam(teamNb.get(), newTeamState);
+                Snapshot.Builder builder = Snapshot.builder(getTime())
+                        .fromSnapshot(snapshot)
+                        .withTeamStates(newTeamStates);
+                if (snapshot.getStatus().isPublic()) {
+                    builder.withPublicTeamStates(newTeamStates);
+                }
+                return builder.build();
+            } else {
+                return snapshot;
+            }
+        } else {
+            return snapshot;
+        }
+    }
+}

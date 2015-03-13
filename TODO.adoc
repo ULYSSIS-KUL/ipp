@@ -1,0 +1,13 @@
+= TODO =
+
+- Add support for scheduling events in the future, this does not
+  work with the current setup because... reasons. This actually works
+  but we can't revise events in the future, which could be problematic.
+- Temporarily use a single processor, or only a single processor,
+  do multi-processor management in UI later
+- Refactor!
+- Fix restart bugs, all components have to be able to fail and start again.
+- Pimp that GUI
+- Document ALL THE THINGS
+- Make a flashy website? A video demo?
+- Make it super easy to deploy, run-of-the-mill "webmaster" level!

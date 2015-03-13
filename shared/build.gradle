@@ -1,0 +1,29 @@
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // TODO: Maybe get rid of this dependency?
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.+'
+    // Args4J for reading options
+    compile group: 'args4j', name: 'args4j', version: '2.+'
+
+    // Jackson for JSON (de)serializing
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.+'
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.+'
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-guava', version: '2.+'
+
+    // Jedis for Redis communication
+    compile group: 'redis.clients', name: 'jedis', version: '2.+'
+
+    // Guava, as a general utility library
+    compile group: 'com.google.guava', name: 'guava', version: '+'
+
+    // Log4J, for logging
+    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.+'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.+'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-1.2-api', version: '2.+'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.+'
+}

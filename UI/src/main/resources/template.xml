@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<messages>
+	<message id="header">
+		Date: ${current-date} <br />
+		Time: ${current-time} <br />
+		Start date: ${start-date} <br />
+		Start time: ${start-time}
+	</message>
+    <message id="collapsable-panel">
+    	${bar}
+        <div class="content">
+            ${content}
+        </div>
+    </message>
+    <message id="collapsable-panel-bar">
+        ${bar-content}
+        ${open-close}
+    </message>
+    <message id="control-panel-bar">
+    	Control
+    </message>
+    <message id="control-panel-content">
+    	Current message: ${current-message}
+    	${message-edit} ${message-button}
+    	Current status: ${current-status}
+    	${status-combo} ${status-button}
+    	${start-button}
+    	${stop-button}
+    </message>
+    <message id="log-panel-bar">
+    	Log ${message-time} ${message-type} ${message}
+    </message>
+    <message id="team-bar">
+        <div class="team-nb">Nb. <span class="val">${nb}</span></div><div class="team-pos">Pos. <span class="val">${pos}</span></div><div class="team-name">Name <span class="val">${name}</span></div><div class="team-rounds">Rounds <span class="val">${rounds}</span></div><div class="progress-bars">${projected-progress} ${actual-progress}</div>
+    </message>
+    <message id="tags-view">
+    	${tags-table}
+		<div>Add tag:</div>
+		${add-tag-id}${add-tag-button}
+    </message>
+    <message id="tags-table-item">
+   		${tag-id}${remove-button}
+    </message>
+    <message id="corrections-view">
+    	${correction-spinner}${commit-button}
+    </message>
+    <message id="safety-button">
+    	${safety} ${button}
+    </message>
+</messages>

@@ -1,0 +1,28 @@
+{
+    "trackLength" : 520,
+    "speedwayURIs" : [
+        "tcp://127.0.0.1",
+        "tcp://127.0.0.1",
+        "tcp://127.0.0.1"
+    ],
+    "readers" : [
+        {
+            "uri" : "redis://127.0.0.1:12345/1",
+            "position" : 0
+        },
+        {
+            "uri" : "redis://127.0.0.1:12345/2",
+            "position" : 220
+        },
+        {
+            "uri" : "redis://127.0.0.1:12345/3",
+            "position" : 440
+        }
+    ],
+    "teams" : [
+        {
+            "teamNb": 0,
+            "name": "First team!"
+        }
+    ]
+}

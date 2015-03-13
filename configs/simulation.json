@@ -1,0 +1,16 @@
+{
+    "trackLength" : 520,
+    "readers" : [
+        {
+            "uri" : "redis://127.0.0.1",
+            "type" : "SIMULATOR",
+            "position" : "0",
+            "simulatedTeams" : [
+                {
+                    "lapTime" : 80,
+                    "tag" : "0A"
+                }
+            ]
+        }
+    ]
+}

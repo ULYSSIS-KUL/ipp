@@ -1,0 +1,33 @@
+apply plugin: 'jetty'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile files('../lib/jwt/git/dist/jwt-3.3.3.jar')
+
+    compile group: 'org.apache.commons', name: 'commons-io', version: '1.+'
+    compile group: 'commons-fileupload', name: 'commons-fileupload', version: '1.+'
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.+'
+
+    providedCompile files('../lib/jwt/git/lib/servlet-api/servlet-api-3.0.jar')
+
+    compile project(':shared')
+    compile project(':Processor') // TODO: Get rid of the Processor dependency?
+    compile project(':Publisher') // TODO: Get rid of the Publisher dependency?
+}
+
+war {
+    from 'src/main/resources/WebRoot'
+    webXml = file('src/main/resources/web.xml')
+}
+
+jettyRun {
+    contextPath = ''
+    webAppSourceDirectory = file('src/main')
+}
+
+jettyRunWar {
+    contextPath = ''
+}

@@ -1,0 +1,12 @@
+apply plugin: 'application'
+
+mainClassName = 'org.ulyssis.countingsystem.publisher.Main'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile project(':shared')
+    compile project(':Processor')
+}

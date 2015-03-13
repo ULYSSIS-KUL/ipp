@@ -1,0 +1,114 @@
+{
+    "trackLength" : 520,
+	"speedwayURIs": [
+		"tcp://192.168.0.1",
+		"tcp://192.168.0.2",
+		"tcp://192.168.0.3"
+	],
+    "readers" : [
+        {
+            "uri" : "redis://192.168.0.10",
+            "position" : 0.0
+        },
+        {
+            "uri" : "redis://192.168.0.11",
+            "position" : 195
+        },
+        {
+            "uri" : "redis://192.168.0.12",
+            "position" : 317
+        }
+    ],
+    "teams" : [
+        {
+            "teamNb": 1,
+            "name": "Apolloon",
+			"tags": ["002420140001"]
+        },
+        {
+            "teamNb": 2,
+            "name": "Ekonomika",
+			"tags": ["002420140002"]
+        },
+        {
+            "teamNb": 3,
+            "name": "LBK",
+			"tags": ["002420140003"]
+        },
+        {
+            "teamNb": 4,
+            "name": "VTK",
+			"tags": ["002420140004"]
+        },
+        {
+            "teamNb": 5,
+            "name": "Wina",
+			"tags": ["002420140005"]
+        },
+        {
+            "teamNb": 6,
+            "name": "Enof Leuven",
+			"tags": ["002420140006"]
+        },
+        {
+            "teamNb": 7,
+            "name": "Psychokring",
+			"tags": ["002420140007"]
+        },
+        {
+            "teamNb": 8,
+            "name": "Letteren United",
+			"tags": ["002420140008"]
+        },
+        {
+            "teamNb": 9,
+            "name": "Atmosphere",
+			"tags": ["002420140009"]
+        },
+        {
+            "teamNb": 10,
+            "name": "4 Speed",
+			"tags": ["002420140010"]
+        },
+        {
+            "teamNb": 11,
+            "name": "Industria",
+			"tags": ["002420140011"]
+        },
+        {
+            "teamNb": 12,
+            "name": "Oker",
+			"tags": ["002420140012"]
+        },
+        {
+            "teamNb": 13,
+            "name": "VRG",
+			"tags": ["002420140013"]
+        },
+        {
+            "teamNb": 14,
+            "name": "Politika",
+			"tags": ["002420140014"]
+        },
+		{
+            "teamNb": 15,
+            "name": "Run for Specials",
+			"tags": ["002420140015"]
+        },
+		{
+            "teamNb": 16,
+            "name": "Medica",
+			"tags": ["002420140016"]
+        },
+		{
+            "teamNb": 17,
+            "name": "Pedal",
+			"tags": ["002420140017"]
+        },
+		{
+            "teamNb": 18,
+            "name": "Lerkeveld",
+			"tags": ["002420140020"]
+        }
+    ]
+}

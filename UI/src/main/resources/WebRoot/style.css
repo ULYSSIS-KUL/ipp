@@ -1,0 +1,154 @@
+body {
+    font: 16px/25px Verdana, sans;
+}
+
+.container {
+    width: 1000px;
+    margin: 0 auto;
+    border-bottom: 2px solid #CCC;
+}
+
+.collapsable-panel {
+    border: 2px solid #CCC;
+    border-bottom: none;
+}
+
+.collapsable-panel.closed {
+    height: 25px;
+}
+
+.collapsable-panel.open {
+    height: 250px;
+}
+
+.collapsable-panel.closed > .content {
+	display: none;
+}
+
+.collapsable-panel-bar {
+    float: left;
+    clear: both;
+    width: 996px;
+    cursor: hand;
+    cursor: pointer;
+}
+
+.collapsable-panel-bar > .open-close {
+    font: 20px/24px monospace;
+    color: white;
+    padding-bottom: 1px;
+    font-weight: bold;
+    background-color: #4FD179;
+    float: right;
+    width: 24px;
+    height: 24px;
+    text-align: center;
+    border-left: 2px solid #CCC;
+}
+
+.collapsable-panel-bar > .bar-content:hover > .open-close {
+    background-color: #5FE189;
+}
+
+.collapsable-panel-bar > .bar-content {
+    float: left;
+    width: 900px;
+}
+
+.collapsable-panel > .content {
+    float: left;
+    width: 996px;
+    height: 223px;
+    border-top: 2px solid #CCC;
+}
+
+.progress-bars {
+    float: right;
+    width: 200px;
+    height: 21px;
+    margin: 0;
+    padding-top: 4px;
+}
+
+.progress-bars > .actual-progress, .progress-bars > .projected-progress {
+    height: 5px;
+    float: left;
+    clear: both;
+    margin: 1px 0;
+}
+
+.progress-bars > .actual-progress > .Wt-pgb-bar {
+    background-color: red;
+}
+
+.progress-bars > .projected-progress > .Wt-pgb-bar {
+    background: cyan;
+}
+
+.reader-chart {
+    float: left;
+}
+
+.teams-menu {
+    float: left;
+    clear: both;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.teams-menu > li {
+    float: left;
+    color: white;
+    text-align: center;
+}
+
+.teams-menu > li > a {
+    float: left;
+    display: block;
+    width: 300px;
+    background-color: black;
+    cursor: pointer;
+    cursor: hand;
+}
+
+.teams-menu > li > a:hover {
+    background-color: #555;
+}
+
+.teams-stack {
+    float: left;
+    clear: both;
+    margin: 0 10px;
+}
+
+.team-name, .team-nb, .team-pos, .team-rounds {
+    float: left;
+}
+
+.team-nb {
+    width: 60px;
+    margin-right: 10px;
+}
+
+.team-pos {
+    width: 65px;
+    margin-right: 10px;
+}
+
+.team-name {
+    width: 200px;
+}
+
+.team-name > .val {
+    float: none;
+}
+
+.team-rounds {
+    width: 120px;
+}
+
+.val {
+    float: right;
+    font-weight: bold;
+}

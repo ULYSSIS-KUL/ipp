@@ -1,0 +1,80 @@
+= The ULYSSIS 24h run system (currently nameless)
+
+TODO: Insert background info and project info for people
+      who have never heard of it, should we open source it
+
+NOTE: Because of the possible plans to open source this,
+      use English everywhere, not Dutch
+
+== Building
+
+=== OS
+
+The project and tests build and work on Linux and Windows,
+and should work on Mac OS X, too. If you have any issues getting
+it to work, talk to Roel.
+
+=== Dependencies
+
+Most of the dependencies are handled by http://gradle.org[Gradle],
+but these aren't:
+
+==== Java SE 8
+
+This is a Java 8 project, so make sure that either your default
+Java SDK version is set to Java 8, or set Gradle to use Java 8 by
+creating a file called +gradle.properties+ in the +Telsysteem+ directory:
+
+gradle.properties
+----
+org.gradle.java.home=/path/to/jdk/8
+----
+
+==== Git
+
+You probably already have git installed, because you checked this out. This project
+has a submodule, so if you didn't do a recursive clone, you'll need to perform
+the following ritual to get started:
+
+ git submodule init
+ git submodule update
+
+The submodules are updated as part of the +updateSubmodules+ task, which
+is run by default, so you don't need to worry about updating that. Note
+that this requires +git+ to be in your +PATH+.
+
+==== Redis
+
+This project uses http://redis.io[Redis]. As part of the build process, some integration
+tests are run with Redis on port +12345+, so make sure that Redis is installed.
+
+In order for Redis to run, +redis-server+ needs to be in your +PATH+, +/usr/bin+,
++/usr/sbin+, or +/usr/local/bin+. You can also specify the full path to +redis-server+
+in +Processor/test/resources/redispath+.
+
+On Debian, Ubuntu or derivatives, you can install Redis with:
+
+ apt-get install redis-server
+
+On Mac OS X, you can use:
+
+ brew install redis
+
+On Windows, you can either https://github.com/MSOpenTech/redis[build Redis from source], or
+https://github.com/ServiceStack/redis-windows[get a binary build here].
+
+TODO: Make the test port configurable, or choose one that's free at random
+
+=== How to build
+
+JWt is a submodule of this project, if you didn't do a recursive clone, then
+initialize the submodules with +git submodule init+ and +git submodule update+.
+
+After that you don't need to update the submodules anymore, because the gradle
+task +updateSubmodules+ -- which is run by default if you just run +./gradlew+ -- will
+take care of that.
+
+All of the tests are run automatically, the source compiled and installed with a simple:
+
+ ./gradlew
+

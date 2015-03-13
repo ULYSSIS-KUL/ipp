@@ -1,0 +1,34 @@
+.metadata/
+#java specific
+*.class
+
+#netbeans ignore personal stuff 
+nbproject/private/
+
+
+## generic files to ignore
+*~
+*.lock
+*.DS_Store
+*.swp
+*.out
+
+/README.html
+.gradle/
+/bin
+/UI/bin
+/.idea
+/.settings
+*.iml
+/target
+/*/build
+/.gradle
+/build/
+/caches/
+/wrapper/
+
+gradle.properties
+
+.classpath
+.settings/
+.project

@@ -1,0 +1,22 @@
+{
+    "trackLength" : 520,
+    "speedwayURIs" : [
+        "tcp://10.0.0.1",
+        "tcp://10.0.0.2",
+        "tcp://10.0.0.3"
+    ],
+    "readers" : [
+        {
+            "uri" : "redis://10.0.0.4",
+            "position" : 0
+        },
+        {
+            "uri" : "redis://10.0.0.5",
+            "position" : 220
+        },
+        {
+            "uri" : "redis://10.0.0.6",
+            "position" : 440
+        }
+    ]
+}

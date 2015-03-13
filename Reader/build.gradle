@@ -1,0 +1,19 @@
+apply plugin: 'application'
+
+mainClassName = 'org.ulyssis.countingsystem.reader.Main'
+
+repositories {
+    mavenCentral()
+
+    maven {
+        url 'https://oss.sonatype.org/content/repositories/releases/'
+    }
+}
+
+dependencies {
+    compile('org.llrp:ltkjava:+') {
+        exclude group: 'log4j', module: 'log4j'
+    }
+
+    compile project(':shared')
+}

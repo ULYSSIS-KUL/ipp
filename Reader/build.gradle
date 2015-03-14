@@ -1,6 +1,6 @@
 apply plugin: 'application'
 
-mainClassName = 'org.ulyssis.countingsystem.reader.Main'
+mainClassName = 'org.ulyssis.ipp.reader.Main'
 
 repositories {
     mavenCentral()

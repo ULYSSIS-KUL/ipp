@@ -228,12 +228,6 @@ public final class Processor implements Runnable {
         Thread commandThread = new Thread(commandProcessor);
         threads.add(commandThread);
         commandThread.start();
-        Thread processorAnnouncer = new Thread(new ProcessorAnnouncer(
-                Config.getCurrentConfig().getAnnouncePort(),
-                Config.getCurrentConfig().getAnnounceString(),
-                jedisUri));
-        threads.add(processorAnnouncer);
-        processorAnnouncer.start();
         notifyStarted();
         try {
             while (!Thread.currentThread().isInterrupted()) {

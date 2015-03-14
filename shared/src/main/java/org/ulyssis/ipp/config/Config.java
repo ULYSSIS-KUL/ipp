@@ -37,8 +37,6 @@ public class Config {
     private String updatesList = "updates";
     private String updatesSet = "updates";
     private String controlChannel = "control";
-    private String announceString = "Processor reporting for duty!";
-    private int announcePort = 31337;
 
     /**
      * Private constructor used by Jackson
@@ -187,25 +185,6 @@ public class Config {
      */
     public ImmutableList<Team> getTeams() {
         return teams;
-    }
-
-    /**
-     * The announce string for processors. This is the first
-     * line of UDP broadcasts sent by processors. The second
-     * line is the redis URI.
-     */
-    public String getAnnounceString() {
-        return announceString;
-    }
-
-    /**
-     * The announce port for processors. This is the port
-     * the UDP broadcasts get sent to.
-     *
-     * @see org.ulyssis.ipp.config.Config#getAnnounceString()
-     */
-    public int getAnnouncePort() {
-        return announcePort;
     }
 
     // TODO: Maybe find some other solution?

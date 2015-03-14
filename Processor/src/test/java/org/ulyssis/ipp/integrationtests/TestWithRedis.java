@@ -12,7 +12,6 @@ import org.ulyssis.ipp.control.commands.AddTagCommand;
 import org.ulyssis.ipp.control.commands.PingCommand;
 import org.ulyssis.ipp.control.commands.SetEndTimeCommand;
 import org.ulyssis.ipp.control.commands.SetStartTimeCommand;
-import org.ulyssis.ipp.monitor.ProcessorMonitor;
 import org.ulyssis.ipp.processor.Processor;
 import org.ulyssis.ipp.processor.ProcessorOptions;
 import org.ulyssis.ipp.status.StatusMessage;
@@ -314,27 +313,5 @@ public class TestWithRedis {
         assertThat(jedis.llen("snapshots"), equalTo(2L));
         assertThat(jedis.lindex("snapshots", 1L), sameJSONAs("{startTime:20}")
                 .allowingExtraUnexpectedFields());
-    }
-
-    @Test
-    public void testAnnounce() throws Exception {
-        setConfig("src", "test", "resources", "config1.json");
-        spawnProcessor("--redis", "redis://127.0.0.1:12345/0");
-        CompletableFuture<String> idFuture = new CompletableFuture<>();
-        CompletableFuture<URI> uriFuture = new CompletableFuture<>();
-        ProcessorMonitor monitor = new ProcessorMonitor(31337, "Processor reporting for duty!");
-        ProcessorMonitor.ProcessorFoundListener myListener = (id, uri, isNew) -> {
-                idFuture.complete(id);
-                uriFuture.complete(uri);
-        };
-        monitor.addProcessorFoundListener(myListener);
-        Thread listener = new Thread(monitor);
-        runningThreads.add(listener);
-        listener.start();
-        URI uri = uriFuture.get(10, TimeUnit.SECONDS);
-        String id = idFuture.getNow("");
-        assertThat(uri, notNullValue());
-        assertThat(uri.getPort(), equalTo(12345));
-        assertThat(id, not(isEmptyOrNullString()));
     }
 }

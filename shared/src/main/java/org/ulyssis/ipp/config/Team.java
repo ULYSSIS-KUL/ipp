@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.BaseEncoding.DecodingException;
 
 
 
@@ -46,7 +45,7 @@ public final class Team {
                             tagNode -> {
                             	try {
                             		builder.add(new TagId(tagNode.asText()));	
-                            	} catch (DecodingException e) {
+                            	} catch (IllegalArgumentException e) {
                             		// TODO: HANDLE THIS EXCEPTION!!!!!
                             		LOG.error("Error decoding tag: {}", tagNode.asText(), e);
                             	}

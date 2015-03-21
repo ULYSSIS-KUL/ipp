@@ -36,6 +36,8 @@ Linux laptops and Raspberry Pis are used.
 
 === Dependencies
 
+https://github.com/ULYSSIS-KUL/ipp/blob/master/doc/dependencies.adoc[You can find an extensive list of dependencies here.]
+
 Most of the dependencies are handled by http://gradle.org[Gradle],
 but these aren't:
 

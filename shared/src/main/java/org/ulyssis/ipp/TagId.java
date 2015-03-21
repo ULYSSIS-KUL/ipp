@@ -17,7 +17,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Represents a tag id (that is properly comparable and immutable)
+ * = Represents a tag id (that is properly comparable and immutable)
  *
  * Mostly just a handy wrapper around a byteList, that
  * properly implements equals for usage in HashMaps and HashSets,
@@ -44,7 +44,7 @@ public final class TagId {
     }
 
     /**
-     * Create a new TagId from the given byte array.
+     * = Create a new TagId from the given byte array.
      *
      * @param id
      *        The tag id in byte array form. This array
@@ -56,7 +56,7 @@ public final class TagId {
     }
 
     /**
-     * Create a new TagId from the given byte list.
+     * = Create a new TagId from the given byte list.
      *
      * @param id
      *        The tag id in byte list form. This list
@@ -68,7 +68,7 @@ public final class TagId {
     }
 
     /**
-     * Create a new TagId from the given hex string.
+     * = Create a new TagId from the given hex string.
      *
      * @param hexId
      *        The hex representation of the tag id.
@@ -82,7 +82,7 @@ public final class TagId {
     }
 
     /**
-     * Convert this tag id to a list.
+     * = Convert this tag id to a list.
      *
      * @return An *unmodifiable view* of the bytes corresponding to this tag id.
      */
@@ -91,7 +91,7 @@ public final class TagId {
     }
 
     /**
-     * Convert this tag id to an array.
+     * = Convert this tag id to an array.
      *
      * @return A *copy* of the bytes corresponding to this tag id.
      */
@@ -100,7 +100,7 @@ public final class TagId {
     }
 
     /**
-     * Convert this tag id to a hex string.
+     * = Convert this tag id to a hex string.
      *
      * @return A hex representation of this tag id.
      */

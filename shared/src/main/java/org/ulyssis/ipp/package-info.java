@@ -1,4 +1,4 @@
 /**
- * = The 24 hour run system (currently nameless)
+ * = i++, a relay run counting system
  */
 package org.ulyssis.ipp;

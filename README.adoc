@@ -1,15 +1,31 @@
 = i++
 
-TODO: Insert background info and project info for people
-      who have never heard of it, should we open source it
+*i++* is a relay run counting system, originally created for the http://24urenloop.be[24 hour run in Leuven].
 
-== Building
+It is created for relay runs with large teams (e.g. student organisations), spanning a multi-hour period,
+a full day in case of the 24 hour run. The scores are entirely determined by how many laps each team manages to run. Individual lap times are not
+relevant for the score.
+
+== Project goals
+
+The goals of i++ are to create a system that is:
+. Easy to use. The end goal is to make i++ just as easy to deploy and manage as, for example, a Wordpress blog.
+. Fault tolerant:
+  a. Irregularities (e.g. overly long or short laps) should be easily detectable.
+  b. Passings at checkpoints should continue to be recorded, even in case of network failure.
+  c. Multiple checkpoints can be used, where checkpoints can fail without making the lap counting
+     impossible.
+  d. Corrections should be applied where necessary.
+  e. The system can function autonomously, so lack of Internet access does not interfere with the
+     ability to count laps.
+
+== Requirements
 
 === OS
 
-The project and tests build and work on Linux and Windows,
-and should work on Mac OS X, too. If you have any issues getting
-it to work, talk to Roel.
+i++ is based on Java 8 and Redis. It should work on any system where these are
+available. This should include Windows, Mac OS X, and of course, Linux. At the 24 hour run,
+Linux laptops and Raspberry Pis are used.
 
 === Dependencies
 

@@ -11,6 +11,7 @@ relevant for the score.
 == Project goals
 
 The goals of {ipp} are to create a system that is:
+
 . Easy to use. The end goal is to make {ipp} just as easy to deploy and manage as, for example, a Wordpress blog.
 . Fault tolerant:
   a. Irregularities (e.g. overly long or short laps) should be easily detectable.
@@ -20,6 +21,10 @@ The goals of {ipp} are to create a system that is:
   d. Corrections should be applied where necessary.
   e. The system can function autonomously, so lack of Internet access does not interfere with the
      ability to count laps.
+
+== License
+
+{ipp} is distributed under the terms of version 3 of the GNU Affero General Public License. Other versions do not apply.
 
 == Requirements
 

@@ -1,6 +1,6 @@
 :ipp: i++
 
-= {ipp}
+= https://github.com/ULYSSIS-KUL/ipp[{ipp}]
 
 {ipp} is a relay run counting system, originally created for the http://24urenloop.be[24 hour run in Leuven].
 

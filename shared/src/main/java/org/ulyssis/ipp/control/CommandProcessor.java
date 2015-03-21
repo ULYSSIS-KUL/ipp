@@ -18,6 +18,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+/**
+ * = The command processor
+ *
+ * The command processor should preferably be run on its own thread,
+ * and processes any commands that come in on the given command channel,
+ * and publishes the result on the given status channel.
+ */
 public final class CommandProcessor implements Runnable {
     private static final Logger LOG = LogManager.getLogger(CommandProcessor.class);
 

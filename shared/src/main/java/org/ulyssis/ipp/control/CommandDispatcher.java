@@ -25,10 +25,28 @@ import java.util.function.BiConsumer;
 public final class CommandDispatcher implements Runnable {
     private static final Logger LOG = LogManager.getLogger(CommandDispatcher.class);
 
+    /**
+     * = The result of running a command
+     */
     public enum Result {
+        /**
+         * The command was successfully executed
+         */
         SUCCESS,
+        /**
+         * The command is unsupported by the target
+         */
         UNSUPPORTED,
+        /**
+         * The command failed for some reason
+         */
         ERROR,
+        /**
+         * The command execution timed out.
+         * <p>
+         * Note that at any time, a timeout may still be followed by a success result,
+         * if it was received correctly.
+         */
         TIMEOUT
     }
 

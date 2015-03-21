@@ -5,8 +5,6 @@ repositories {
 }
 
 dependencies {
-    // TODO: Maybe get rid of this dependency?
-    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.+'
     // Args4J for reading options
     compile group: 'args4j', name: 'args4j', version: '2.+'
 

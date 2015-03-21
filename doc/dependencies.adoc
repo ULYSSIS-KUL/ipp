@@ -1,0 +1,41 @@
+:ipp: i++
+
+= {ipp} dependencies
+
+{ipp} depends on--and is thankful to--the following projects:
+
+== Shared dependencies
+
+- https://github.com/FasterXML/jackson[Jackson]
+- http://args4j.kohsuke.org[args4j]
+- https://github.com/xetorthio/jedis[Jedis]
+- https://github.com/google/guava[Google Guava]
+- http://logging.apache.org/log4j/2.x/[Apache Log4j 2]
+
+== For building
+
+- http://www.gradle.org[Gradle]
+
+== Service dependencies
+
+- http://redis.io[Redis]
+
+== For testing
+
+- http://junit.org[JUnit]
+- http://hamcrest.org[Hamcrest]
+- https://github.com/shazam/shazamcrest[Shazamcrest]
+- http://mockito.org[Mockito]
+- http://www.datumedge.co.uk/hamcrest-json[Hamcrest JSON]
+
+== For documentation
+
+- https://github.com/asciidoctor/asciidoclet[Asciidoclet]
+
+== Reader
+
+- http://llrp.org[LLRP Toolkit]
+
+== UI
+
+- http://www.webtoolkit.eu/jwt[JWt]

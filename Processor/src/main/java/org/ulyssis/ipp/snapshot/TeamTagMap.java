@@ -64,7 +64,7 @@ public final class TeamTagMap {
                     String tagStr = tagNode.asText();
                     try {
                     	tagToTeam.put(new TagId(tagStr), team);
-                    } catch (DecodingException e) {
+                    } catch (IllegalArgumentException e) {
                     	// TODO: Handle this exception!!!!
                     	LOG.error("Error decoding tag id: {}", tagStr, e);
                     }

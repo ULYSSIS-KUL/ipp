@@ -7,10 +7,10 @@ repositories {
 dependencies {
     compile files('../lib/jwt/git/dist/jwt-3.3.3.jar')
 
+    // These are all necessary for JWt
     compile group: 'org.apache.commons', name: 'commons-io', version: '1.+'
     compile group: 'commons-fileupload', name: 'commons-fileupload', version: '1.+'
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.+'
-
     providedCompile files('../lib/jwt/git/lib/servlet-api/servlet-api-3.0.jar')
 
     compile project(':shared')

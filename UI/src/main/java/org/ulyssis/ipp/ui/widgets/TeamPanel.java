@@ -327,7 +327,7 @@ public class TeamPanel extends CollapsablePanel {
     	try {
     		TagId tag = new TagId(tagIdString);
     		sharedState.getCommandDispatcher().sendAsync(new AddTagCommand(tag, team.getTeamNb()));
-    	} catch (DecodingException e) {
+    	} catch (IllegalArgumentException e) {
     		// TODO: Handle decoding exception!
     	}
     }

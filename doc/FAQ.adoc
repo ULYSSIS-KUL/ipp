@@ -1,0 +1,30 @@
+:ipp: i++
+
+= Questions you might ask
+
+== Where does the name {ipp} come from?
+
+This system was nameless for a long time, but we (https://ulyssis.org[ULYSSIS]) wanted to release {ipp} as an
+open source project. As such, we felt like it required a good name, because "the counting
+system of the 24 hour run in Leuven" doesn't really work. When we couldn't come up with a
+good name ourselves, we turned to social media, where https://twitter.com/MattiasBuelens[@MattiasBuelens]
+proposed the name {ipp}. We voted on all of the options we had using the
+http://civs.cs.cornell.edu/[Condorcet Internet Voting Service]. The
+winner turned out to be {ipp}.
+
+== What does {ipp} mean?
+
+`i++` is something you see often in a loop in C-like programming languages, like C, C\+\+, or Java.
+It is the act of adding +1+ to +i+. If you see the number of laps as a number +i+, then
+`i++` is what the system does every lap. Obviously, this is a gross oversimplification
+of what the system actually does :-).
+
+== What license does {ipp} use?
+
+{ipp} uses version 3 of the GNU Affero General Public License. Other versions do not apply.
+
+== Who or what is ULYSSIS?
+
+https://ulyssis.org[ULYSSIS] is a student organisation connected to the http://www.kuleuven.be/english[University of Leuven].
+ULYSSIS stands for: "Unix Lovers Yield Student Services and Internet Support". ULYSSIS provides many IT-related services to the
+students and personnel of the University of Leuven.

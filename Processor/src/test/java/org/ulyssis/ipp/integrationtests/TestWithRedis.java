@@ -144,6 +144,7 @@ public class TestWithRedis {
 
     @AfterClass
     public static void stopRedis() throws IOException {
+        jedis.shutdown();
         jedis.close();
         try {
             if (redisProcess.isAlive()) {

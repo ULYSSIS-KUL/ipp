@@ -2,7 +2,7 @@ version: 0.2-b{build}
 environment:
     JAVA_HOME: C:\Program Files\Java\jdk1.8.0
 before_build:
-    - cinst redis-64
+    - cinst -y redis-64
     - git submodule update --init --recursive
 build_script:
     - .\gradlew.bat

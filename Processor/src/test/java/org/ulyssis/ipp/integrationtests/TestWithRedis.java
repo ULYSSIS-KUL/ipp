@@ -97,7 +97,11 @@ public class TestWithRedis {
             paths = pathEnv.split(":");
         }
         for (int i = 0; i < paths.length && !foundRedis; ++i) {
-            redisPath = Paths.get(paths[i], "redis-server");
+            if (os.startsWith("Windows")) {
+                redisPath = Paths.get(paths[i], "redis-server.exe");
+            } else {
+                redisPath = Paths.get(paths[i], "redis-server");
+            }
             redisFile = redisPath.toFile();
             if (redisFile.exists() && redisFile.isFile() && redisFile.canExecute()) {
                 foundRedis = true;

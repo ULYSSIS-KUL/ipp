@@ -2,6 +2,8 @@
 
 = https://github.com/ULYSSIS-KUL/ipp[{ipp}]
 
+image:https://travis-ci.org/ULYSSIS-KUL/ipp.svg?branch=master["Build Status", link="https://travis-ci.org/ULYSSIS-KUL/ipp"]
+
 {ipp} is a relay run counting system, originally created for the http://24urenloop.be[24 hour run in Leuven].
 
 It is created for relay runs with large teams (e.g. student organisations), spanning a multi-hour period,

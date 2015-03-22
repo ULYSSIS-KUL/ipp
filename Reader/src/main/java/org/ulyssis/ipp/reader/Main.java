@@ -27,7 +27,6 @@ import java.util.Collection;
 
 public final class Main {
     private final Collection<Thread> threads = new ArrayList<>();
-    private boolean restart = false;
     private final String[] args;
 
     private Main(String[] args) {
@@ -42,22 +41,16 @@ public final class Main {
 
     public void run() {
         Runtime.getRuntime().addShutdownHook(new Thread(this::interruptHook));
-        do {
-            restart = false;
-            doRun();
-            if (restart) {
-                stopAndJoinThreads();
-            }
-        } while (restart);
+        doRun();
     }
 
     private void doRun() {
         ReaderOptions.readerOptionsFromArgs(args).ifPresent(options ->
             Config.fromConfigurationFile(options.getConfigFile()).ifPresent(config -> {
                 Config.setCurrentConfig(config);
-                spawn(new Reader(options, this::restartHook));
+                spawn(new Reader(options));
                 try {
-                    while(!Thread.currentThread().isInterrupted() && !restart) {
+                    while(!Thread.currentThread().isInterrupted()) {
                         Thread.sleep(1000L);
                     }
                 } catch (InterruptedException e) {
@@ -80,10 +73,6 @@ public final class Main {
             } catch (InterruptedException ignored) {
             }
         }
-    }
-
-    private void restartHook() {
-        restart = true;
     }
 
     public static void main(String[] args) {

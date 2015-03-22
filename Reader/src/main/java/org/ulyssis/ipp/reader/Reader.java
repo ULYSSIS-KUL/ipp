@@ -28,7 +28,6 @@ import org.ulyssis.ipp.config.ReaderConfig;
 import org.ulyssis.ipp.control.CommandHandler;
 import org.ulyssis.ipp.control.CommandProcessor;
 import org.ulyssis.ipp.control.commands.Command;
-import org.ulyssis.ipp.control.commands.RestartCommand;
 import org.ulyssis.ipp.control.handlers.PingHandler;
 import org.ulyssis.ipp.status.StatusMessage;
 import org.ulyssis.ipp.status.StatusReporter;
@@ -56,7 +55,6 @@ import java.util.function.Consumer;
 
 // TODO: Go over all of the error handling, and evaluate if it is appropriate
 // TODO: Set some sort of scheduled task for timeouts, try to reinitialize?
-// TODO: Maybe have some button in the interface that issues a restart?
 
 public final class Reader implements Runnable {
     private static final Logger LOG = LogManager.getLogger(Reader.class);
@@ -70,7 +68,6 @@ public final class Reader implements Runnable {
     private Optional<ByteChannel> replayChannel = Optional.empty();
     private Optional<BufferedReader> replayReader = Optional.empty();
     private final String updateChannel;
-    private final Runnable restartCallback;
 
     // NOTE: be careful, Jedis instances are not threadsafe!
     private final Jedis jedis;
@@ -81,20 +78,6 @@ public final class Reader implements Runnable {
     
     private final Map<TagId, Instant> lastUpdateForTag;
     private boolean speedwayInitialized = false;
-
-    private class RestartCommandHandler implements CommandHandler {
-        @Override
-        public void handle(Command command, Consumer<Boolean> callback) {
-            assert(command instanceof RestartCommand);
-            restartCallback.run();
-            callback.accept(true); // TODO: Handle success/failure somehow?
-        }
-
-        @Override
-        public Class<? extends Command> getCommandClass() {
-            return RestartCommand.class;
-        }
-    }
 
     /**
      * Create a new reader and connect to Redis.
@@ -107,11 +90,10 @@ public final class Reader implements Runnable {
      * @param options
      *           The command line options to use for this reader.
      */
-    public Reader(ReaderOptions options, Runnable restartCallback) {
+    public Reader(ReaderOptions options) {
         this.options = options;
         this.readerConfig = Config.getCurrentConfig().getReader(options.getId());
         this.llrpReader = new LLRPReader(this::messageReceived, this::errorOccurred);
-        this.restartCallback = restartCallback;
 
         if (EnumSet.of(ReaderConfig.Type.SIMULATOR, ReaderConfig.Type.REPLAY).contains(readerConfig.getType())) {
             // NOTE: One Jedis instance, so one thread in the pool.
@@ -138,7 +120,6 @@ public final class Reader implements Runnable {
         String controlChannel = Config.getCurrentConfig().getControlChannel();
         this.commandProcessor = new CommandProcessor(readerConfig.getURI(), controlChannel, statusReporter);
         commandProcessor.addHandler(new PingHandler());
-        commandProcessor.addHandler(new RestartCommandHandler());
         this.updateChannel =
                 JedisHelper.dbLocalChannel(Config.getCurrentConfig().getUpdateChannel(), readerConfig.getURI());
 

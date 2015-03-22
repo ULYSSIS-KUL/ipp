@@ -218,7 +218,7 @@ public class TestWithRedis {
 
     private CommandDispatcher spawnProcessor(String... args) throws InterruptedException {
         ProcessorOptions options = ProcessorOptions.processorOptionsFromArgs(args).get();
-        Processor processor = new Processor(options, () -> {});
+        Processor processor = new Processor(options);
         Semaphore sem = new Semaphore(0);
         processor.addOnStartedCallback(p -> sem.release());
         Thread thread = new Thread(processor);

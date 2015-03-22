@@ -28,7 +28,6 @@ import java.util.UUID;
         @JsonSubTypes.Type(value=CorrectionCommand.class),
         @JsonSubTypes.Type(value=PingCommand.class),
         @JsonSubTypes.Type(value=RemoveTagCommand.class),
-        @JsonSubTypes.Type(value=RestartCommand.class),
         @JsonSubTypes.Type(value=SetEndTimeCommand.class),
         @JsonSubTypes.Type(value=SetStartTimeCommand.class),
         @JsonSubTypes.Type(value=SetStatusMessageCommand.class),

@@ -23,13 +23,10 @@ import org.apache.logging.log4j.Logger;
 import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.config.ReaderConfig;
 import org.ulyssis.ipp.config.Team;
-import org.ulyssis.ipp.control.CommandHandler;
 import org.ulyssis.ipp.control.CommandProcessor;
 import org.ulyssis.ipp.control.commands.AddTagCommand;
-import org.ulyssis.ipp.control.commands.Command;
 import org.ulyssis.ipp.control.commands.CorrectionCommand;
 import org.ulyssis.ipp.control.commands.RemoveTagCommand;
-import org.ulyssis.ipp.control.commands.RestartCommand;
 import org.ulyssis.ipp.control.commands.SetEndTimeCommand;
 import org.ulyssis.ipp.control.commands.SetStartTimeCommand;
 import org.ulyssis.ipp.control.commands.SetStatusCommand;
@@ -93,7 +90,6 @@ public final class Processor implements Runnable {
     private final ConcurrentMap<Event, Consumer<Boolean> > eventCallbacks;
     private final StatusReporter statusReporter;
     private final CommandProcessor commandProcessor;
-    private final Runnable restartCallback;
     private final List<Consumer<Processor>> onStartedCallbacks;
 
     private final List<ReaderListener> listeners;
@@ -102,21 +98,7 @@ public final class Processor implements Runnable {
     private final List<Event> events;
     private final ArrayList<Snapshot> snapshots;
 
-    private class RestartCommandHandler implements CommandHandler {
-        @Override
-        public void handle(Command command, Consumer<Boolean> callback) {
-            assert(command instanceof RestartCommand);
-            restartCallback.run();
-            callback.accept(true); // TODO: Handle success/failure somehow?
-        }
-
-        @Override
-        public Class<? extends Command> getCommandClass() {
-            return RestartCommand.class;
-        }
-    }
-
-    public Processor(final ProcessorOptions options, final Runnable restartCallback) {
+    public Processor(final ProcessorOptions options) {
         URI uri = options.getRedisUri();
         this.options = options;
         this.jedisUri = uri;
@@ -125,7 +107,6 @@ public final class Processor implements Runnable {
         this.eventCallbacks  = new ConcurrentHashMap<>();
         this.events = new ArrayList<>();
         this.snapshots = new ArrayList<>();
-        this.restartCallback = restartCallback;
         this.onStartedCallbacks = new CopyOnWriteArrayList<>();
         this.listeners = new ArrayList<>();
         this.threads = new ArrayList<>();
@@ -194,9 +175,6 @@ public final class Processor implements Runnable {
 
     private void initCommandProcessor() {
         commandProcessor.addHandler(new PingHandler());
-        // TODO: Add the restart command handler when we're sure we can properly do this for the Processor
-        //       (or just never do this, this really only makes sense for slow starting readers)
-        // commandProcessor.addHandler(new RestartCommandHandler());
         commandProcessor.addHandler(
                 new EventCommandHandler<>(AddTagCommand.class, AddTagEvent::fromCommand, this::queueEvent));
         commandProcessor.addHandler(

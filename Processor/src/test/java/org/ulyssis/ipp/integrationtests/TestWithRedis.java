@@ -107,17 +107,19 @@ public class TestWithRedis {
                 foundRedis = true;
             }
         }
-        if (redisFile == null || !redisFile.exists() || !redisFile.isFile() || !redisFile.canExecute()) {
-            redisPath = Paths.get("/usr/bin/redis-server");
-            redisFile = redisPath.toFile();
-        }
-        if (redisFile == null || !redisFile.exists() || !redisFile.isFile() || !redisFile.canExecute()) {
-            redisPath = Paths.get("/usr/sbin/redis-server");
-            redisFile = redisPath.toFile();
-        }
-        if (redisFile == null || !redisFile.exists() || !redisFile.isFile() || !redisFile.canExecute()) {
-            redisPath = Paths.get("/usr/local/bin/redis-server");
-            redisFile = redisPath.toFile();
+        if (!os.startsWith("Windows")) {
+            if (redisFile == null || !redisFile.exists() || !redisFile.isFile() || !redisFile.canExecute()) {
+                redisPath = Paths.get("/usr/bin/redis-server");
+                redisFile = redisPath.toFile();
+            }
+            if (redisFile == null || !redisFile.exists() || !redisFile.isFile() || !redisFile.canExecute()) {
+                redisPath = Paths.get("/usr/sbin/redis-server");
+                redisFile = redisPath.toFile();
+            }
+            if (redisFile == null || !redisFile.exists() || !redisFile.isFile() || !redisFile.canExecute()) {
+                redisPath = Paths.get("/usr/local/bin/redis-server");
+                redisFile = redisPath.toFile();
+            }
         }
         if (redisFile == null || !redisFile.exists() || !redisFile.isFile() || !redisFile.canExecute()) {
             // Can't start Redis?

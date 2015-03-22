@@ -2,7 +2,8 @@
 
 = https://github.com/ULYSSIS-KUL/ipp[{ipp}]
 
-image:https://travis-ci.org/ULYSSIS-KUL/ipp.svg?branch=master["Build Status", link="https://travis-ci.org/ULYSSIS-KUL/ipp"]
+image:https://travis-ci.org/ULYSSIS-KUL/ipp.svg?branch=master["Travis CI Build Status", link="https://travis-ci.org/ULYSSIS-KUL/ipp"]
+image:https://ci.appveyor.com/api/projects/status/m8uv4uxf26g6thue?svg=true["AppVeyor Build Status", link="https://ci.appveyor.com/project/RockinRoel/ipp"]
 
 {ipp} is a relay run counting system, originally created for the http://24urenloop.be[24 hour run in Leuven].
 

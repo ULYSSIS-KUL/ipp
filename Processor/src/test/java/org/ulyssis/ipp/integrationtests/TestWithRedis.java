@@ -131,7 +131,7 @@ public class TestWithRedis {
         builder.redirectError(ProcessBuilder.Redirect.INHERIT);
         builder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
         redisProcess = builder.start();
-        Thread.sleep(1000L);
+        Thread.sleep(2000L);
         jedis = JedisHelper.get(URI.create("redis://127.0.0.1:12345"));
         selfTest();
     }
@@ -147,7 +147,7 @@ public class TestWithRedis {
         jedis.close();
         try {
             if (redisProcess.isAlive()) {
-                Thread.sleep(1000L);
+                Thread.sleep(2000L);
             }
             if (redisProcess.isAlive()) {
                 redisProcess.destroy();

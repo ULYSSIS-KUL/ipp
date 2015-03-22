@@ -230,6 +230,8 @@ public class TestWithRedis {
         Thread dispatcherThread = new Thread(dispatcher);
         runningThreads.add(dispatcherThread);
         dispatcherThread.start();
+        // TODO: Find the reason why this sleep is necessary to make it work on single core systems!
+        Thread.sleep(1000L);
         return dispatcher;
     }
 

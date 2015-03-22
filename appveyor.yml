@@ -1,6 +1,7 @@
 version: 0.2-b{build}
 before_build:
     - cinst redis-64
+    - git submodule update --init --recursive
 build_script:
     - .\gradlew.bat
 test: off

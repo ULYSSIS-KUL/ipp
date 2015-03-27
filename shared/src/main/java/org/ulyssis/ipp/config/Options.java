@@ -32,7 +32,7 @@ import org.kohsuke.args4j.Option;
  * only written to when creating an Options object from a command line.
  */
 public class Options {
-    @Option(name="-c", usage="The configuration file, defaults to config.json", aliases="--config", metaVar="<config>")
+    @Option(name="-c", usage="The configuration file", aliases="--config", metaVar="<config>")
     private String configFile = "config.json";
 
     protected Options() {

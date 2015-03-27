@@ -1,4 +1,7 @@
 apply plugin: 'jetty'
+apply plugin: 'application'
+
+mainClassName = 'org.ulyssis.ipp.ui.Main'
 
 repositories {
     mavenCentral()
@@ -12,6 +15,9 @@ dependencies {
     compile group: 'commons-fileupload', name: 'commons-fileupload', version: '1.+'
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.+'
     providedCompile files('../lib/jwt/git/lib/servlet-api/servlet-api-3.0.jar')
+
+    compile group: 'io.undertow', name: 'undertow-core', version: '1.1.0.Final'
+    compile group: 'io.undertow', name: 'undertow-servlet', version: '1.1.0.Final'
 
     compile project(':shared')
     compile project(':Processor') // TODO: Get rid of the Processor dependency?

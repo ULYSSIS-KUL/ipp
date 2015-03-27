@@ -39,7 +39,9 @@ public class UIServlet extends WtServlet {
     @Override
     public void init() throws ServletException {
         super.init();
-        Config.setCurrentConfig(Config.fromConfigurationFile(Paths.get("config.json")).get());
+        String configFile = getInitParameter("config");
+        if (configFile == null) configFile = "config.json";
+        Config.setCurrentConfig(Config.fromConfigurationFile(Paths.get(configFile)).get());
         sharedState = new SharedState();
     }
 

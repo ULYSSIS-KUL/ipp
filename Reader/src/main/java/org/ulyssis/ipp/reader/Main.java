@@ -40,7 +40,7 @@ public final class Main {
     }
 
     public void run() {
-        Runtime.getRuntime().addShutdownHook(new Thread(this::interruptHook));
+        Runtime.getRuntime().addShutdownHook(new Thread(this::stopThreads));
         doRun();
     }
 
@@ -50,9 +50,10 @@ public final class Main {
                 Config.setCurrentConfig(config);
                 spawn(new Reader(options));
                 try {
-                    while(!Thread.currentThread().isInterrupted()) {
-                        Thread.sleep(1000L);
+                    for (Thread thread : threads) {
+                        thread.join();
                     }
+                    Configurator.shutdown((LoggerContext) LogManager.getContext());
                 } catch (InterruptedException e) {
                     // Ignore
                 }
@@ -60,18 +61,9 @@ public final class Main {
         );
     }
 
-    private void interruptHook() {
-        stopAndJoinThreads();
-        Configurator.shutdown((LoggerContext) LogManager.getContext());
-    }
-
-    private void stopAndJoinThreads() {
+    private void stopThreads() {
         for (Thread thread : threads) {
             thread.interrupt();
-            try {
-                thread.join();
-            } catch (InterruptedException ignored) {
-            }
         }
     }
 

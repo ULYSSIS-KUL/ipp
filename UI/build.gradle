@@ -8,7 +8,7 @@ repositories {
 }
 
 dependencies {
-    compile files('../lib/jwt/git/dist/jwt-3.3.3.jar')
+    compile files('../lib/jwt/git/dist/jwt-3.3.4.jar')
 
     // These are all necessary for JWt
     compile group: 'org.apache.commons', name: 'commons-io', version: '1.+'

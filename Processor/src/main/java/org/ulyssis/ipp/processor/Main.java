@@ -17,63 +17,22 @@
  */
 package org.ulyssis.ipp.processor;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configurator;
 import org.ulyssis.ipp.config.Config;
-
-import java.util.ArrayList;
-import java.util.Collection;
+import org.ulyssis.ipp.runtime.Runner;
 
 public final class Main {
-    private final Collection<Thread> threads = new ArrayList<>();
-    private boolean stop = false;
-    private final String[] args;
-
-    private Main(String[] args) {
-        this.args = args;
-    }
-
-    private void spawn(Runnable runnable) {
-        Thread thread = new Thread(runnable);
-        threads.add(thread);
-        thread.start();
-    }
-
-    private void run() {
-        Runtime.getRuntime().addShutdownHook(new Thread(this::interruptHook));
-        doRun();
-    }
-
-    private void doRun() {
-        ProcessorOptions.processorOptionsFromArgs(args).ifPresent(options ->
-            Config.fromConfigurationFile(options.getConfigFile()).ifPresent(config -> {
-                Config.setCurrentConfig(config);
-                spawn(new Processor(options));
-            })
-        );
-        cleanup();
-    }
-
-    private void interruptHook() {
-        for (Thread thread : threads) {
-            thread.interrupt();
-        }
-        cleanup();
-    }
-
-    private void cleanup() {
-        try {
-            for (Thread thread : threads) {
-                thread.join();
-            }
-        } catch (InterruptedException e) {
-        }
-        Configurator.shutdown((LoggerContext) LogManager.getContext());
-    }
-
     public static void main(String[] args) {
-        Main main = new Main(args);
-        main.run();
+        Runner runner = new Runner();
+        try {
+            ProcessorOptions.processorOptionsFromArgs(args).ifPresent(options ->
+                Config.fromConfigurationFile(options.getConfigFile()).ifPresent(config -> {
+                    Config.setCurrentConfig(config);
+                    runner.addRunnable(new Processor(options));
+                    runner.run();
+                })
+            );
+        } finally {
+            runner.cleanup();
+        }
     }
 }

@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ulyssis.ipp.config.Config;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.SortedMap;
 
@@ -25,6 +26,13 @@ public final class Replayer implements Runnable {
             if (replayMap.containsKey(i)) {
                 System.out.println(String.format("Reader %d: %s", i, replayMap.get(i).toAbsolutePath()));
             }
+        }
+        System.out.println("Press any key to continue (or ctrl-C to cancel)");
+        try {
+            System.in.read();
+            while (!Thread.currentThread().isInterrupted()) {}
+        } catch (IOException e) {
+            LOG.fatal("An unexpected exception occurred!", e);
         }
     }
 }

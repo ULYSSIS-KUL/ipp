@@ -52,42 +52,30 @@ public final class Main {
             Config.fromConfigurationFile(options.getConfigFile()).ifPresent(config -> {
                 Config.setCurrentConfig(config);
                 spawn(new Replayer(options));
-                try {
-                    for (Thread thread : threads) {
-                        thread.join();
-                    }
-                    Configurator.shutdown((LoggerContext) LogManager.getContext());
-                } catch (InterruptedException e) {
-                    // Ignore
-                }
             })
         );
+        cleanup();
     }
 
     private void interruptHook() {
-        stopThreads();
-    }
-
-    private void stopThreads() {
         for (Thread thread : threads) {
             thread.interrupt();
         }
+        cleanup();
+    }
+
+    private void cleanup() {
+        try {
+            for (Thread thread : threads) {
+                thread.join();
+            }
+        } catch (InterruptedException e) {
+        }
+        Configurator.shutdown((LoggerContext) LogManager.getContext());
     }
 
     public static void main(String[] args) {
         Main main = new Main(args);
         main.run();
     }
-//
-//    public static void main(String[] args) {
-//        // TODO: Provide which readers to emulate and their replay files,
-//        //       or just have to provide replay files for every reader?
-//        // Format: 0:path 1:path 2:path?
-//        ReplayerOptions.replayerOptionsFromArgs(args).ifPresent(options -> {
-//            System.out.println("Options present!");
-//            options.getReplayMap().forEach((i, file) -> {
-//                System.out.println(i + " " + file);
-//            });
-//        });
-//    }
 }

@@ -2,19 +2,19 @@
     "trackLength" : 520,
     "readers" : [
         {
-            "uri" : "redis://127.0.0.1/0",
+            "uri" : "redis://127.0.0.1/1",
             "position" : 0.0,
 			"type": "REPLAY",
 			"replayMode": "REALTIME"
         },
         {
-            "uri" : "redis://127.0.0.1/1",
+            "uri" : "redis://127.0.0.1/2",
             "position" : 195,
 			"type": "REPLAY",
 			"replayMode": "REALTIME"
         },
         {
-            "uri" : "redis://127.0.0.1/2",
+            "uri" : "redis://127.0.0.1/3",
             "position" : 317,
 			"type": "REPLAY",
 			"replayMode": "REALTIME"

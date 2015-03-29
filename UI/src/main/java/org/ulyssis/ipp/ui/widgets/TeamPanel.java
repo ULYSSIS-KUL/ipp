@@ -131,6 +131,9 @@ public class TeamPanel extends CollapsablePanel {
 				if (index.getRow() >= events.size() - 1 || index.getColumn() >= 2) {
 					return null;
 				}
+                if (index.getRow() < 0) {
+                    return 0; // TODO: What to do if we don't have enough events?
+                }
 				if (index.getColumn() == 0) {
 					return Duration.between(oneHourAgo, events.get(index.getRow() + 1).getTime()).toMillis() / 1000D;
 				} else if (index.getColumn() == 1) {

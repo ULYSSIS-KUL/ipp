@@ -35,6 +35,9 @@ public class Options {
     @Option(name="-c", usage="The configuration file", aliases="--config", metaVar="<config>")
     private String configFile = "config.json";
 
+    @Option(name="-h", usage="Show usage", aliases={"--help","--usage"})
+    private boolean showUsage = false;
+
     protected Options() {
     }
 
@@ -58,6 +61,11 @@ public class Options {
         CmdLineParser parser = new CmdLineParser(this);
         try {
             parser.parseArgument(args);
+            if (showUsage) {
+                System.err.printf("Usage: %s [options]\n", getExecName());
+                parser.printUsage(System.err);
+                return Optional.empty();
+            }
             return Optional.of(this);
         } catch (CmdLineException e) {
             System.err.println(e.getMessage());

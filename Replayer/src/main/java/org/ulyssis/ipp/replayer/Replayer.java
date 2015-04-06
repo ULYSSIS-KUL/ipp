@@ -83,9 +83,10 @@ public final class Replayer implements Runnable {
                     service.schedule(() -> pushUpdate(updateToPush),
                             Duration.between(Instant.now(), newUpdateTime).toMillis(), TimeUnit.MILLISECONDS);
                     sem.acquire();
+                } else {
+                    LOG.info("No more updates! Stopping...");
                 }
-            }
-            while (first != null && !Thread.currentThread().isInterrupted());
+            } while (first != null && !Thread.currentThread().isInterrupted());
         } catch (Exception e) {
             LOG.fatal("An unexpected exception occurred!", e);
         }

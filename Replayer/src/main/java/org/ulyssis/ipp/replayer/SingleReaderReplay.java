@@ -32,14 +32,14 @@ public final class SingleReaderReplay {
 
     private void fetchNextUpdate() throws Exception {
         try {
-            while (nextUpdate != null && nextUpdate.getReaderId() != id) {
+            do {
                 String line = reader.readLine();
                 if (line != null) {
                     nextUpdate = jsonMapper.readValue(line, TagUpdate.class);
                 } else {
                     nextUpdate = null;
                 }
-            }
+            } while (nextUpdate != null && nextUpdate.getReaderId() != id);
         } catch (Exception e) {
             nextUpdate = null;
             throw e;

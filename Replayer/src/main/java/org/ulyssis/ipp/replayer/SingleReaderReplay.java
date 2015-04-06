@@ -17,6 +17,7 @@ public final class SingleReaderReplay {
     private BufferedReader reader;
     private TagUpdate nextUpdate;
     private Exception exception = null;
+    long sn = 0;
 
     public SingleReaderReplay(int readerId, Path replayFile) throws Exception {
         id = readerId;
@@ -36,6 +37,9 @@ public final class SingleReaderReplay {
                 String line = reader.readLine();
                 if (line != null) {
                     nextUpdate = jsonMapper.readValue(line, TagUpdate.class);
+                    nextUpdate = new TagUpdate(nextUpdate.getReaderId(),
+                            sn, nextUpdate.getUpdateTime(), nextUpdate.getTag());
+                    sn ++;
                 } else {
                     nextUpdate = null;
                 }

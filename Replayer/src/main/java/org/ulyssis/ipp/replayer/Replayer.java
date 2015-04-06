@@ -103,6 +103,7 @@ public final class Replayer implements Runnable {
             byte[] updateBytes = Serialization.getJsonMapper().writeValueAsBytes(update);
             LOG.debug("Pushing update {}:{} to Redis",
                     update.getReaderId(), update.getUpdateCount());
+            LOG.debug("JSON: {}", Serialization.getJsonMapper().writeValueAsString(update));
             try {
                 Transaction t = jedis.multi();
                 Response<Long> nextUpdateCount = t.rpush("updates".getBytes(), updateBytes);

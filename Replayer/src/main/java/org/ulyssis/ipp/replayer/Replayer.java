@@ -55,8 +55,8 @@ public final class Replayer implements Runnable {
         System.out.println("Press any key to continue (or ctrl-C to cancel)");
         try {
             System.in.read();
-            for (Map.Entry<Integer,Path> entry : replayMap.entrySet()) {
-                replays.add(new SingleReaderReplay(entry.getKey(),entry.getValue()));
+            for (Map.Entry<Integer, Path> entry : replayMap.entrySet()) {
+                replays.add(new SingleReaderReplay(entry.getKey(), entry.getValue()));
             }
             SingleReaderReplay first = null;
             do {
@@ -87,6 +87,7 @@ public final class Replayer implements Runnable {
                     LOG.info("No more updates! Stopping...");
                 }
             } while (first != null && !Thread.currentThread().isInterrupted());
+        } catch (InterruptedException ignored) {
         } catch (Exception e) {
             LOG.fatal("An unexpected exception occurred!", e);
         }

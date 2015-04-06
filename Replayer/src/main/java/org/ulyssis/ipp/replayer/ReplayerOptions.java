@@ -18,8 +18,10 @@
 package org.ulyssis.ipp.replayer;
 
 import org.kohsuke.args4j.Argument;
+import org.kohsuke.args4j.Option;
 import org.ulyssis.ipp.config.Options;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -34,6 +36,10 @@ import java.util.TreeMap;
 public final class ReplayerOptions extends Options {
     @Argument(required=true,usage="The replay files to use",metaVar="<files>",multiValued=true)
     private List<String> replayFiles = new ArrayList<>();
+
+    @Option(name="-r", usage="The Redis URI for this replayer", aliases="--redis",
+            metaVar="<redis uri>")
+    private URI uri = URI.create("redis://127.0.0.1");
 
     private SortedMap<Integer,Path> replayMap = new TreeMap<>();
 
@@ -63,7 +69,7 @@ public final class ReplayerOptions extends Options {
                         withoutId.add(path);
                     } else {
                         System.err.println("AAA");
-                        // TODO: ERROR!
+                        // TODO: PROPER ERROR!
                     }
                 } else {
                     Path path = Paths.get(split[1]);
@@ -71,7 +77,7 @@ public final class ReplayerOptions extends Options {
                         replayerOptions.replayMap.put(readerId, path);
                     } else {
                         System.err.println("BBB");
-                        // TODO: ERROR!
+                        // TODO: PROPER ERROR!
                     }
                 }
             });
@@ -89,5 +95,9 @@ public final class ReplayerOptions extends Options {
 
     public SortedMap<Integer,Path> getReplayMap() {
         return Collections.unmodifiableSortedMap(replayMap);
+    }
+
+    public URI getRedisURI() {
+        return uri;
     }
 }

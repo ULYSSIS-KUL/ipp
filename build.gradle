@@ -15,7 +15,7 @@ idea {
 }
 
 subprojects {
-    if (name == 'Processor' || name == 'Reader' || name == 'UI' || name == 'shared') {
+    if (name == 'Processor' || name == 'Reader' || name == 'UI' || name == 'shared' || name == 'Replayer') {
         apply plugin: 'java'
 
         sourceCompatibility = '1.8'

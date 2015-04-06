@@ -97,8 +97,8 @@ public class TeamPanel extends CollapsablePanel {
     private UIApplication application;
     private final SharedState sharedState;
     
-    private final List<WCartesianChart> charts = new ArrayList<WCartesianChart>();
-    private final List<EventsModel> itemModels = new ArrayList<EventsModel>();
+    private final List<WCartesianChart> charts = new ArrayList<>();
+    private final List<EventsModel> itemModels = new ArrayList<>();
     
     private Optional<Snapshot> latestSnapshot = Optional.empty();
     

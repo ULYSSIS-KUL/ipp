@@ -15,11 +15,7 @@ import redis.clients.jedis.exceptions.JedisConnectionException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-import java.util.SortedMap;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
@@ -50,7 +46,7 @@ public final class Replayer implements Runnable {
         Config config = Config.getCurrentConfig();
         int nbReaders = config.getNbReaders();
         SortedMap<Integer,Path> replayMap = options.getReplayMap();
-        Collection<SingleReaderReplay> replays = Collections.EMPTY_LIST;
+        Collection<SingleReaderReplay> replays = new ArrayList<>();
         for (int i = 0; i < nbReaders; i++) {
             if (replayMap.containsKey(i)) {
                 System.out.println(String.format("Reader %d: %s", i, replayMap.get(i).toAbsolutePath()));

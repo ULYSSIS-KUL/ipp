@@ -3,7 +3,6 @@ package org.ulyssis.ipp.replayer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ulyssis.ipp.TagId;
 import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.updates.TagUpdate;
 import org.ulyssis.ipp.utils.JedisHelper;
@@ -13,16 +12,18 @@ import redis.clients.jedis.Response;
 import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.SortedMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public final class Replayer implements Runnable {
     private static final Logger LOG = LogManager.getLogger(Replayer.class);
@@ -30,6 +31,10 @@ public final class Replayer implements Runnable {
     private final Jedis jedis; // TODO: Individual Jedis for each reader? Or not?
     private final String updateChannel;
     private long updateCount = 0;
+
+    private final ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
+
+    private final Semaphore sem = new Semaphore(0);
 
     public Replayer(ReplayerOptions options) {
         this.options = options;
@@ -74,12 +79,14 @@ public final class Replayer implements Runnable {
                     }
                     TagUpdate update = first.next().get();
                     Instant newUpdateTime = update.getUpdateTime().plus(offset);
-                    update = new TagUpdate(update.getReaderId(),
+                    TagUpdate updateToPush = new TagUpdate(update.getReaderId(),
                             update.getUpdateCount(),
                             newUpdateTime,
                             update.getTag());
                     // TODO: Delay update pushing a bit! Don't push it all at once!
-                    pushUpdate(update);
+                    service.schedule(() -> pushUpdate(updateToPush),
+                            Duration.between(Instant.now(), newUpdateTime).toMillis(), TimeUnit.MILLISECONDS);
+                    sem.acquire();
                 }
             }
             while (first != null && !Thread.currentThread().isInterrupted());
@@ -110,5 +117,6 @@ public final class Replayer implements Runnable {
         } catch (JsonProcessingException e) {
             LOG.error("Error formatting update as JSON", e);
         }
+        sem.release();
     }
 }

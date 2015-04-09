@@ -36,15 +36,16 @@ import java.util.List;
 /**
  * = Represents a tag id (that is properly comparable and immutable)
  *
- * Mostly just a handy wrapper around a byteList, that
- * properly implements equals for usage in HashMaps and HashSets,
- * and JSON (de)serialization as a hex string.
+ * Mostly just wraps a string. Compares are case insensitive.
+ * (Tag id AABBCC is the same as aabbcc)
+ * This can be used for hex ids, or string ids
  */
 @JsonSerialize(using=TagId.Serializer.class)
 @JsonDeserialize(using=TagId.Deserializer.class)
 public final class TagId {
-    private final byte[] id;
-    private final List<Byte> idList;
+    private final String id;
+    private final String lowerCaseId;
+    private final int hashCode;
 
     static class Serializer extends JsonSerializer<TagId> {
         @Override
@@ -64,66 +65,47 @@ public final class TagId {
      * = Create a new TagId from the given byte array.
      *
      * @param id
-     *        The tag id in byte array form. This array
-     *        will be copied over to guarantee immutability.
+     *        The tag id in byte array form. It will be
+     *        converted to a lowercase hex form.
      */
     public TagId(byte[] id) {
-        this.id = Arrays.copyOf(id, id.length);
-        this.idList = Bytes.asList(this.id);
+        this(BaseEncoding.base16().lowerCase().encode(id));
     }
 
     /**
      * = Create a new TagId from the given byte list.
      *
      * @param id
-     *        The tag id in byte list form. This list
-     *        will be copied over into a byte array.
+     *        The tag id in byte list form. It will be
+     *        converted to a lowercase hex form.
      */
     public TagId(List<Byte> id) {
-        this.id = Bytes.toArray(id);
-        this.idList = Bytes.asList(this.id);
+        this(BaseEncoding.base16().lowerCase().encode(Bytes.toArray(id)));
     }
 
     /**
-     * = Create a new TagId from the given hex string.
+     * = Create a new TagId
      *
-     * @param hexId
-     *        The hex representation of the tag id.
-     * @throws java.lang.IllegalArgumentException
-     *         An IllegalArgumentException will be thrown if the
-     *         hex string can't be decoded.
+     * @param id
+     *        A string that uniquely identifies the tag
+     * @throws java.lang.NullPointerException
+     *         A NullPointerException will be thrown if the given id is null.
      */
-    public TagId(String hexId) throws IllegalArgumentException {
-        this.id = BaseEncoding.base16().decode(hexId.toUpperCase());
-        this.idList = Bytes.asList(this.id);
+    public TagId(String id) throws NullPointerException {
+        if (id == null) throw new NullPointerException("The tag id is not allowed to be null!");
+        this.id = id;
+        this.lowerCaseId = id.toLowerCase();
+        this.hashCode = id.hashCode();
     }
 
     /**
-     * = Convert this tag id to a list.
+     * = Get the tag id as a string
      *
-     * @return An *unmodifiable view* of the bytes corresponding to this tag id.
-     */
-    public List<Byte> toList() {
-        return Collections.unmodifiableList(idList);
-    }
-
-    /**
-     * = Convert this tag id to an array.
-     *
-     * @return A *copy* of the bytes corresponding to this tag id.
-     */
-    public byte[] toArray() {
-        return Arrays.copyOf(id, id.length);
-    }
-
-    /**
-     * = Convert this tag id to a hex string.
-     *
-     * @return A hex representation of this tag id.
+     * @return This tag id as a string
      */
     @Override
     public String toString() {
-        return BaseEncoding.base16().encode(id);
+        return id;
     }
 
     @Override
@@ -131,11 +113,11 @@ public final class TagId {
         if (this == other) return true;
         if (other == null) return false;
         if (!(other instanceof TagId)) return false;
-        return idList.equals(((TagId) other).idList);
+        return this.lowerCaseId.equals(((TagId) other).lowerCaseId);
     }
 
     @Override
     public int hashCode() {
-        return idList.hashCode();
+        return this.hashCode;
     }
 }

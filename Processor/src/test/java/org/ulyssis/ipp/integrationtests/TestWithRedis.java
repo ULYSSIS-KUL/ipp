@@ -250,9 +250,9 @@ public class TestWithRedis {
         CommandDispatcher.Result result = dispatcher.send(
                 new AddTagCommand(new TagId("abcd"), 0));
         assertThat(result, equalTo(CommandDispatcher.Result.SUCCESS));
-        assertThat(jedis.get("snapshot"), sameJSONAs("{teamTagMap:{0:[\"ABCD\"]}}").allowingExtraUnexpectedFields());
+        assertThat(jedis.get("snapshot"), sameJSONAs("{teamTagMap:{0:[\"abcd\"]}}").allowingExtraUnexpectedFields());
         assertThat(jedis.llen("snapshots"), equalTo(1L));
-        assertThat(jedis.rpop("snapshots"), sameJSONAs("{teamTagMap:{0:[\"ABCD\"]}}").allowingExtraUnexpectedFields());
+        assertThat(jedis.rpop("snapshots"), sameJSONAs("{teamTagMap:{0:[\"abcd\"]}}").allowingExtraUnexpectedFields());
     }
 
     @Test
@@ -311,7 +311,7 @@ public class TestWithRedis {
         waitForSnapshot();
         readerJedis.close();
         assertThat(semaphore.availablePermits(), equalTo(0));
-        assertThat(jedis.get("snapshot"), sameJSONAs("{teamTagMap:{0:[\"ABCD\"]},teamStates:{0:{tagFragmentCount:3}}}")
+        assertThat(jedis.get("snapshot"), sameJSONAs("{teamTagMap:{0:[\"abcd\"]},teamStates:{0:{tagFragmentCount:3}}}")
             .allowingExtraUnexpectedFields());
     }
 

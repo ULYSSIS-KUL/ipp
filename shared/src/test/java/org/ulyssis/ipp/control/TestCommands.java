@@ -39,7 +39,7 @@ public class TestCommands {
                              "\"type\": \"AddTag\"," +
                              "\"commandId\": \"" + addTagCommand.getCommandId() + "\"," +
                              "\"time\": 0," +
-                             "\"tag\": \"ABCD\"," +
+                             "\"tag\": \"abcd\"," +
                              "\"teamNb\": 1" +
                            "}"));
     }

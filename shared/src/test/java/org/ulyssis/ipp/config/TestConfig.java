@@ -127,7 +127,7 @@ public class TestConfig {
         Team team = new Team(4, "Team four", ImmutableList.of(new TagId("abcd0123"), new TagId("0123ABCD")));
         String json = Serialization.getJsonMapper().writeValueAsString(team);
         // TODO: This check is too specific
-        assertThat(json, sameJSONAs("{\"teamNb\":4,\"name\":\"Team four\",\"tags\":[\"ABCD0123\",\"0123ABCD\"]}")
+        assertThat(json, sameJSONAs("{\"teamNb\":4,\"name\":\"Team four\",\"tags\":[\"abcd0123\",\"0123ABCD\"]}")
             .allowingAnyArrayOrdering());
     }
 }

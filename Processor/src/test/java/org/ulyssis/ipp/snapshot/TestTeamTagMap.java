@@ -62,7 +62,7 @@ public class TestTeamTagMap {
         ttm = ttm.addTagToTeam("deff", 5);
         ttm = ttm.addTagToTeam("adcb", 4);
         String result = Serialization.getJsonMapper().writeValueAsString(ttm);
-        assertThat(result, equalTo("{\"4\":[\"ABCD\",\"ADCB\"],\"5\":[\"DEFF\"]}"));
+        assertThat(result, equalTo("{\"4\":[\"abcd\",\"adcb\"],\"5\":[\"deff\"]}"));
     }
 
     @Test

@@ -38,7 +38,6 @@ public class ReaderConfig {
     private Type type = Type.LLRP;
     private double position;
     private List<SimulatedTeam> simulatedTeams = new ArrayList<>();
-    private ReplayMode replayMode = ReplayMode.REALTIME;
 
     public static class SimulatedTeam {
         private final TagId tag;
@@ -63,15 +62,9 @@ public class ReaderConfig {
 
     public enum Type {
         LLRP,
-        SIMULATOR,
-        REPLAY
+        SIMULATOR
     }
 
-    public enum ReplayMode {
-        REALTIME,
-        ALL_AT_ONCE
-    }
-    
     /**
      * Private constructor used by Jackson
      */
@@ -133,17 +126,5 @@ public class ReaderConfig {
     @SuppressWarnings("unused")
     private void setSimulatedTeams(List<SimulatedTeam> simulatedTeams) {
         this.simulatedTeams = simulatedTeams;
-    }
-
-    public ReplayMode getReplayMode() {
-        return this.replayMode;
-    }
-
-    /**
-     * Private setter used by Jackson.
-     */
-    @SuppressWarnings("unused")
-    private void setReplayMode(ReplayMode replayMode) {
-        this.replayMode = replayMode;
     }
 }

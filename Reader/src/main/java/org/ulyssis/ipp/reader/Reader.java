@@ -25,9 +25,7 @@ import org.llrp.ltk.generated.parameters.TagReportData;
 import org.llrp.ltk.types.LLRPMessage;
 import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.config.ReaderConfig;
-import org.ulyssis.ipp.control.CommandHandler;
 import org.ulyssis.ipp.control.CommandProcessor;
-import org.ulyssis.ipp.control.commands.Command;
 import org.ulyssis.ipp.control.handlers.PingHandler;
 import org.ulyssis.ipp.status.StatusMessage;
 import org.ulyssis.ipp.status.StatusReporter;
@@ -40,7 +38,6 @@ import redis.clients.jedis.Response;
 import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
@@ -51,7 +48,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Consumer;
 
 // TODO: Go over all of the error handling, and evaluate if it is appropriate
 // TODO: Set some sort of scheduled task for timeouts, try to reinitialize?
@@ -66,7 +62,6 @@ public final class Reader implements Runnable {
     private final LLRPReader llrpReader;
     private final ScheduledExecutorService executorService;
     private Optional<ByteChannel> replayChannel = Optional.empty();
-    private Optional<BufferedReader> replayReader = Optional.empty();
     private final String updateChannel;
 
     // NOTE: be careful, Jedis instances are not threadsafe!
@@ -95,8 +90,7 @@ public final class Reader implements Runnable {
         this.readerConfig = Config.getCurrentConfig().getReader(options.getId());
         this.llrpReader = new LLRPReader(this::messageReceived, this::errorOccurred);
 
-        if (EnumSet.of(ReaderConfig.Type.SIMULATOR, ReaderConfig.Type.REPLAY).contains(readerConfig.getType())) {
-            // NOTE: One Jedis instance, so one thread in the pool.
+        if (readerConfig.getType() == ReaderConfig.Type.SIMULATOR) {
             executorService = Executors.newSingleThreadScheduledExecutor();
         } else {
             executorService = null;
@@ -126,24 +120,15 @@ public final class Reader implements Runnable {
         options.getReplayFile().ifPresent(replayFile -> {
             try {
                 LOG.info("Opening replay file: {}", replayFile);
-                if (readerConfig.getType() == ReaderConfig.Type.REPLAY) {
-                    BufferedReader reader = Files.newBufferedReader(replayFile);
-                    this.replayReader = Optional.of(reader);
-                } else {
-                    ByteChannel channel = Files.newByteChannel(replayFile,
-                            StandardOpenOption.APPEND, StandardOpenOption.CREATE);
-                    this.replayChannel = Optional.of(channel);
-                }
+                ByteChannel channel = Files.newByteChannel(replayFile,
+                        StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+                this.replayChannel = Optional.of(channel);
             } catch (IOException e) {
                 LOG.error("Couldn't open channel for logging to replay file: {}", replayFile, e);
             }
         });
 
         this.lastUpdateForTag = new HashMap<>();
-
-        if (!options.getReplayFile().isPresent() && readerConfig.getType() == ReaderConfig.Type.REPLAY) {
-            LOG.fatal("Can't replay a file if no file is given!");
-        }
     }
 
     /**
@@ -162,8 +147,6 @@ public final class Reader implements Runnable {
             }
         } else if (type == ReaderConfig.Type.SIMULATOR) {
             initSimulator();
-        } else if (type == ReaderConfig.Type.REPLAY) {
-            initReplayer();
         }
         Thread commandThread = new Thread(commandProcessor);
         commandThread.start();
@@ -245,49 +228,6 @@ public final class Reader implements Runnable {
         }
         Runnable runnable = () -> simulateOneTeam(team);
         executorService.schedule(runnable, team.getLapTime(), TimeUnit.SECONDS);
-    }
-
-    private void initReplayer() {
-        Instant instant = Instant.now();
-        BufferedReader reader = replayReader.get();
-        try {
-            String line = reader.readLine();
-            TagUpdate update = Serialization.getJsonMapper().readValue(line, TagUpdate.class);
-            Duration adjustment = Duration.between(update.getUpdateTime(), instant);
-            Runnable runnable = () -> updateReadUpdate(adjustment, update);
-            executorService.execute(runnable);
-        } catch (IOException e) {
-            LOG.fatal("Couldn't read or parse replay file {}!", options.getReplayFile().get(), e);
-        }
-    }
-
-    private void readOneUpdate(Duration adjustment) {
-        BufferedReader reader = replayReader.get();
-        try {
-            String line = reader.readLine();
-            TagUpdate update = Serialization.getJsonMapper().readValue(line, TagUpdate.class);
-            Instant newTime = update.getUpdateTime().plus(adjustment);
-            Runnable runnable = () -> updateReadUpdate(adjustment, update);
-            if (readerConfig.getReplayMode() == ReaderConfig.ReplayMode.REALTIME) {
-                Instant now = Instant.now();
-                long nextUpdateDelay = Duration.between(now, newTime).toMillis();
-                executorService.schedule(runnable, nextUpdateDelay, TimeUnit.MILLISECONDS);
-            } else if (readerConfig.getReplayMode() == ReaderConfig.ReplayMode.ALL_AT_ONCE) {
-                executorService.execute(runnable);
-            }
-        } catch (IOException e) {
-            LOG.fatal("Couldn't read or parse replay file {}!", options.getReplayFile().get(), e);
-        }
-    }
-
-    private void updateReadUpdate(Duration adjustment, TagUpdate update) {
-        if (update.getReaderId() == options.getId()) {
-            Instant newTime = update.getUpdateTime().plus(adjustment);
-            if (acceptUpdate(newTime, update.getTag())) {
-                pushUpdate(newTime, update.getTag());
-            }
-        }
-        readOneUpdate(adjustment);
     }
 
     /**

@@ -94,4 +94,20 @@ public final class TagSeenEvent extends Event {
             return snapshot;
         }
     }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == null) return false;
+        if (!(other instanceof TagSeenEvent)) return false;
+        if (this == other) return true;
+        TagSeenEvent otherEvent = (TagSeenEvent) other;
+        return tag.equals(otherEvent.tag) &&
+                readerId == otherEvent.readerId &&
+                getTime().equals(otherEvent.getTime());
+    }
+
+    @Override
+    public int hashCode() {
+        return tag.toString().hashCode() ^ readerId ^ getTime().hashCode();
+    }
 }

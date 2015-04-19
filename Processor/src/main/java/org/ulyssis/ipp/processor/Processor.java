@@ -296,6 +296,9 @@ public final class Processor implements Runnable {
                 break;
             }
         }
+        if (i >= 0 && events.get(i).equals(event)) {
+            LOG.error("Something went terribly wrong! Two events are the same?");
+        }
         i++;
         events.add(i, event);
         i = Integer.min(i, oldIndex);

@@ -68,6 +68,7 @@ public final class ReaderListener extends JedisHelper.CallBackPubSub {
         for (byte[] update : updates) {
             processMessage(update);
         }
+        lastUpdate = updateId;
     }
 
     /**
@@ -78,6 +79,7 @@ public final class ReaderListener extends JedisHelper.CallBackPubSub {
         for (byte[] update : updates) {
             processMessage(update);
         }
+        lastUpdate = updates.size() - 1L;
     }
 
     /**
@@ -86,7 +88,6 @@ public final class ReaderListener extends JedisHelper.CallBackPubSub {
     private void processMessage(byte[] message) {
         try {
             TagUpdate update = Serialization.getJsonMapper().readValue(message, TagUpdate.class);
-            lastUpdate = update.getUpdateCount();
             updateConsumer.accept(new TagSeenEvent(update));
         } catch (IOException e) {
             LOG.error("Couldn't process update {}!", new String(message), e);

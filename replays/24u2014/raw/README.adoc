@@ -1,0 +1,5 @@
+= Raw logs =
+
+These are the raw logs from the 24 hour run 2014, including
+many events from before the run started. The non-raw logs have
+those events trimmed off.

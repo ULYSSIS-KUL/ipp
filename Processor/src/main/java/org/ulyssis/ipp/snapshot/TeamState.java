@@ -126,6 +126,7 @@ public final class TeamState {
         int newTagFragmentCount = tagFragmentCount;
         double newSpeed = Double.NaN;
         double newPredictedSpeed = Double.NaN;
+        int lastEventId = 0;
         if (lastTagSeenEvent.isPresent()) {
             TagSeenEvent lastEvent = lastTagSeenEvent.get();
             if (lastEvent.getReaderId() == event.getReaderId() &&
@@ -134,15 +135,18 @@ public final class TeamState {
                         MIN_TIME_BETWEEN_UPDATES);
                 return this;
             }
-            int diff = (event.getReaderId() - lastEvent.getReaderId());
-            if (diff < 0) {
-                diff = Config.getCurrentConfig().getNbReaders() + diff;
-            } else if (diff == 0) {
-                diff = Config.getCurrentConfig().getNbReaders();
-            }
-            newTagFragmentCount += diff;
-            List<ReaderConfig> readers = Config.getCurrentConfig().getReaders();
-            double distance = 0;
+            lastEventId = lastEvent.getReaderId();
+        }
+        int diff = (event.getReaderId() - lastEventId);
+        if (diff < 0) {
+            diff = Config.getCurrentConfig().getNbReaders() + diff;
+        } else if (diff == 0 && lastTagSeenEvent.isPresent()) {
+            diff = Config.getCurrentConfig().getNbReaders();
+        }
+        newTagFragmentCount += diff;
+        List<ReaderConfig> readers = Config.getCurrentConfig().getReaders();
+        double distance = 0;
+        if (lastTagSeenEvent.isPresent()) {
             for (int i = tagFragmentCount; i < newTagFragmentCount; i++) {
                 int j = i % Config.getCurrentConfig().getNbReaders();
                 int k = (i + 1) % Config.getCurrentConfig().getNbReaders();
@@ -156,7 +160,7 @@ public final class TeamState {
                     distance += Config.getCurrentConfig().getTrackLength();
                 }
             }
-            double time = Duration.between(lastEvent.getTime(), event.getTime()).toMillis() / 1000D;
+            double time = Duration.between(lastTagSeenEvent.get().getTime(), event.getTime()).toMillis() / 1000D;
             newSpeed = distance / time;
             if (Double.isNaN(predictedSpeed)) {
                 newPredictedSpeed = newSpeed;

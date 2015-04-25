@@ -290,7 +290,7 @@ public class TestWithRedis {
         dispatcher.send(new AddTagCommand(Instant.EPOCH, new TagId("abcd"), 0));
         waitForSnapshot();
         Jedis readerJedis = JedisHelper.get(new URI("redis://127.0.0.1:12345/1"));
-        TagUpdate update = new TagUpdate(0, 0, Instant.EPOCH.plus(3, ChronoUnit.MINUTES), new TagId("abcd"));
+        TagUpdate update = new TagUpdate(0, 0, Instant.EPOCH.plus(10, ChronoUnit.SECONDS), new TagId("abcd"));
         readerJedis.rpush("updates".getBytes(), Serialization.getJsonMapper().writeValueAsBytes(update));
         readerJedis.publish("update:1", "0");
         waitForSnapshot();

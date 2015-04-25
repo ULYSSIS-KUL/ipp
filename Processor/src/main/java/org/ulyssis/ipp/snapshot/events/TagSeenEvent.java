@@ -75,9 +75,9 @@ public final class TagSeenEvent extends Event {
                 Optional<TeamState> teamState = snapshot.getTeamStates().getStateForTeam(teamNb.get());
                 TeamState newTeamState;
                 if (teamState.isPresent()) {
-                    newTeamState = teamState.get().addTagSeenEvent(this);
+                    newTeamState = teamState.get().addTagSeenEvent(snapshot, this);
                 } else {
-                    newTeamState = (new TeamState()).addTagSeenEvent(this);
+                    newTeamState = (new TeamState()).addTagSeenEvent(snapshot, this);
                 }
                 TeamStates newTeamStates = snapshot.getTeamStates().setStateForTeam(teamNb.get(), newTeamState);
                 Snapshot.Builder builder = Snapshot.builder(getTime())

@@ -44,13 +44,13 @@ public class TestSnapshot {
     public void setUp() {
         Config config = Mockito.mock(Config.class);
         Mockito.when(config.getNbReaders()).thenReturn(3);
-        Mockito.when(config.getTrackLength()).thenReturn(520D);
+        Mockito.when(config.getTrackLength()).thenReturn(300D);
         ReaderConfig reader1 = Mockito.mock(ReaderConfig.class);
         Mockito.when(reader1.getPosition()).thenReturn(0D);
         ReaderConfig reader2 = Mockito.mock(ReaderConfig.class);
-        Mockito.when(reader2.getPosition()).thenReturn(170D);
+        Mockito.when(reader2.getPosition()).thenReturn(100D);
         ReaderConfig reader3 = Mockito.mock(ReaderConfig.class);
-        Mockito.when(reader3.getPosition()).thenReturn(350D);
+        Mockito.when(reader3.getPosition()).thenReturn(200D);
         ImmutableList<ReaderConfig> readers = ImmutableList.of(reader1, reader2, reader3);
         Mockito.when(config.getReaders()).thenReturn(readers);
         Config.setCurrentConfig(config);
@@ -79,9 +79,12 @@ public class TestSnapshot {
                 .withEndTime(Instant.EPOCH)
                 .withTeamStates(new TeamStates()
                         .setStateForTeam(0, new TeamState().addTagSeenEvent(
+                                Snapshot.builder(Instant.MIN).build(),
                                 new TagSeenEvent(Instant.EPOCH, new TagId("ABCD"), 0))
-                                .addTagSeenEvent(new TagSeenEvent(Instant.EPOCH.plus(1000, ChronoUnit.SECONDS),
-                                        new TagId("ABCD"), 0))))
+                                .addTagSeenEvent(null, // TODO: It's not really clean that we're passing null here,
+                                        //       but it should work fine nonetheless
+                                        new TagSeenEvent(Instant.EPOCH.plus(1000, ChronoUnit.SECONDS),
+                                                new TagId("ABCD"), 0))))
                 .withTeamTagMap(new TeamTagMap()
                         .addTagToTeam("ABCD", 0))
                 .withStatusMessage("foo").build();
@@ -140,11 +143,53 @@ public class TestSnapshot {
         TagSeenEvent tagSeenEvent =
                 new TagSeenEvent(Instant.EPOCH.plus(3, ChronoUnit.SECONDS), new TagId("DCBA"), 0);
         snapshot = tagSeenEvent.apply(snapshot);
-        EndEvent endEvent = new EndEvent(Instant.EPOCH.plus(4, ChronoUnit.SECONDS));
+        EndEvent endEvent = new EndEvent(Instant.EPOCH.plus(50, ChronoUnit.SECONDS));
         snapshot = endEvent.apply(snapshot);
         TagSeenEvent tagSeenEvent2 =
-                new TagSeenEvent(Instant.EPOCH.plus(4, ChronoUnit.SECONDS), new TagId("DCBA"), 0);
+                new TagSeenEvent(Instant.EPOCH.plus(100, ChronoUnit.SECONDS), new TagId("DCBA"), 0);
         snapshot = tagSeenEvent2.apply(snapshot);
         MatcherAssert.assertThat(snapshot.getTeamStates().getNbLapsForTeam(3), Matchers.equalTo(0));
+    }
+
+    @Test
+    public void testPredictedSpeedWhenStartedThenFirstEvent() throws Exception {
+        TagId tag = new TagId("DCBA");
+        Snapshot snapshot = Snapshot.builder(Instant.EPOCH).build();
+        AddTagEvent addTagEvent = new AddTagEvent(Instant.EPOCH, tag, 3);
+        snapshot = addTagEvent.apply(snapshot);
+        StartEvent startEvent = new StartEvent(Instant.EPOCH);
+        snapshot = startEvent.apply(snapshot);
+        TagSeenEvent tagSeenEvent =
+                new TagSeenEvent(Instant.EPOCH.plus(10, ChronoUnit.SECONDS), tag, 0);
+        snapshot = tagSeenEvent.apply(snapshot);
+        TagSeenEvent tagSeenEvent2 =
+                new TagSeenEvent(Instant.EPOCH.plus(50, ChronoUnit.SECONDS), tag, 1);
+        snapshot = tagSeenEvent2.apply(snapshot);
+        double speedShouldBe = 100D / (50D - 10D);
+        MatcherAssert.assertThat(snapshot.getTeamStates().getStateForTeam(3).get()
+            .getPredictedSpeed(), Matchers.equalTo(speedShouldBe));
+        MatcherAssert.assertThat(snapshot.getTeamStates().getStateForTeam(3).get()
+                .getSpeed(), Matchers.equalTo(speedShouldBe));
+    }
+
+    @Test
+    public void testPredictedSpeedWhenFirstEventThenStarted() throws Exception {
+        TagId tag = new TagId("DCBA");
+        Snapshot snapshot = Snapshot.builder(Instant.EPOCH).build();
+        AddTagEvent addTagEvent = new AddTagEvent(Instant.EPOCH, tag, 3);
+        snapshot = addTagEvent.apply(snapshot);
+        TagSeenEvent tagSeenEvent =
+                new TagSeenEvent(Instant.EPOCH.minus(10, ChronoUnit.SECONDS), tag, 0);
+        snapshot = tagSeenEvent.apply(snapshot);
+        StartEvent startEvent = new StartEvent(Instant.EPOCH);
+        snapshot = startEvent.apply(snapshot);
+        TagSeenEvent tagSeenEvent2 =
+                new TagSeenEvent(Instant.EPOCH.plus(50, ChronoUnit.SECONDS), tag, 1);
+        snapshot = tagSeenEvent2.apply(snapshot);
+        double speedShouldBe = 100D / 50D;
+        MatcherAssert.assertThat(snapshot.getTeamStates().getStateForTeam(3).get()
+                .getPredictedSpeed(), Matchers.equalTo(speedShouldBe));
+        MatcherAssert.assertThat(snapshot.getTeamStates().getStateForTeam(3).get()
+                .getSpeed(), Matchers.equalTo(speedShouldBe));
     }
 }

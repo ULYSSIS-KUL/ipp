@@ -122,7 +122,8 @@ public final class TeamState {
         this.predictedSpeed = predictedSpeed;
     }
 
-    public TeamState addTagSeenEvent(TagSeenEvent event) {
+    // TODO: Refactor!
+    public TeamState addTagSeenEvent(Snapshot snapshot, TagSeenEvent event) {
         int newTagFragmentCount = tagFragmentCount;
         double newSpeed = Double.NaN;
         double newPredictedSpeed = Double.NaN;
@@ -140,7 +141,9 @@ public final class TeamState {
         int diff = (event.getReaderId() - lastEventId);
         if (diff < 0) {
             diff = Config.getCurrentConfig().getNbReaders() + diff;
-        } else if (diff == 0 && lastTagSeenEvent.isPresent()) {
+        } else if (diff == 0 && (lastTagSeenEvent.isPresent() || // TODO: Refactor this fustercluck of comparisons
+                (snapshot.getStartTime().isBefore(event.getTime()) &&
+                        !Duration.between(snapshot.getStartTime(), event.getTime()).minusSeconds(MIN_TIME_BETWEEN_UPDATES).isNegative()))) {
             diff = Config.getCurrentConfig().getNbReaders();
         }
         newTagFragmentCount += diff;
@@ -161,6 +164,16 @@ public final class TeamState {
                 }
             }
             double time = Duration.between(lastTagSeenEvent.get().getTime(), event.getTime()).toMillis() / 1000D;
+            newSpeed = distance / time;
+            if (Double.isNaN(predictedSpeed)) {
+                newPredictedSpeed = newSpeed;
+            } else {
+                newPredictedSpeed = newSpeed * ALPHA + predictedSpeed * (1 - ALPHA);
+            }
+        } else if (snapshot.getStartTime().isBefore(event.getTime()) &&
+                !Duration.between(snapshot.getStartTime(), event.getTime()).minusSeconds(MIN_TIME_BETWEEN_UPDATES).isNegative()) {
+            double time = Duration.between(snapshot.getStartTime(), event.getTime()).toMillis() / 1000D;
+            distance = readers.get(event.getReaderId()).getPosition();
             newSpeed = distance / time;
             if (Double.isNaN(predictedSpeed)) {
                 newPredictedSpeed = newSpeed;

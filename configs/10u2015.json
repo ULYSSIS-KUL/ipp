@@ -1,0 +1,79 @@
+{
+    "trackLength" : 500,
+	"speedwayURIs": [
+		"tcp://192.168.0.1",
+		"tcp://192.168.0.2"
+	],
+    "readers" : [
+        {
+            "uri" : "redis://192.168.0.10",
+            "position" : 0.0
+        },
+        {
+            "uri" : "redis://192.168.0.11",
+            "position" : 200
+        }
+    ],
+    "teams" : [
+        {
+            "teamNb": 1,
+            "name": "AP",
+            "tags": ["001020150001"]
+        },
+        {
+            "teamNb": 2,
+            "name": "SOFIA",
+            "tags": ["001020150002"]
+        },
+        {
+            "teamNb": 3,
+            "name": "Wikings-NSK",
+            "tags": ["001020150003"]
+        },
+        {
+            "teamNb": 4,
+            "name": "Amentia",
+            "tags": ["001020150004"]
+        },
+        {
+            "teamNb": 5,
+            "name": "Somatra",
+            "tags": ["001020150005"]
+        },
+        {
+            "teamNb": 6,
+            "name": "ESN",
+            "tags": ["001020150006"]
+        },
+        {
+            "teamNb": 7,
+            "name": "AP LO",
+            "tags": ["001020150007"]
+        },
+        {
+            "teamNb": 8,
+            "name": "PornoTD Team",
+            "tags": ["001020150008"]
+        },
+        {
+            "teamNb": 9,
+            "name": "PSW",
+            "tags": ["001020150009"]
+        },
+        {
+            "teamNb": 10,
+            "name": "MOKSke",
+            "tags": ["001020150010"]
+        },
+        {
+            "teamNb": 11,
+            "name": "Absoc & Abstract",
+            "tags": ["001020150011"]
+        },
+        {
+            "teamNb": 12,
+            "name": "Vulcanis",
+            "tags": ["001020150012"]
+        }
+    ]
+}

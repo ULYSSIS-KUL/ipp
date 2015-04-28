@@ -34,7 +34,6 @@ public abstract class CollapsablePanel extends WTemplate {
     private State state = State.Collapsed;
     private final WTemplate bar;
     private WContainerWidget openClose;
-    private Icon openCloseIcon;
 
     public CollapsablePanel() {
         this(null);
@@ -62,7 +61,6 @@ public abstract class CollapsablePanel extends WTemplate {
 
         openClose = new WContainerWidget();
         openClose.setStyleClass("open-close");
-        openCloseIcon = new Icon("plus", openClose);
         bar.bindWidget("open-close", openClose);
 
         bar.clicked().addListener(this, this::toggleOpenClosed);
@@ -87,12 +85,10 @@ public abstract class CollapsablePanel extends WTemplate {
     protected void toggleOpenClosed() {
         if (state == State.Collapsed) {
             state = State.Extended;
-            openCloseIcon.setName("minus");
             removeStyleClass("closed");
             addStyleClass("open");
         } else if (state == State.Extended) {
             state = State.Collapsed;
-            openCloseIcon.setName("plus");
             removeStyleClass("open");
             addStyleClass("closed");
         }

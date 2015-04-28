@@ -19,8 +19,10 @@ package org.ulyssis.ipp.ui.widgets;
 
 import eu.webtoolkit.jwt.ItemDataRole;
 import eu.webtoolkit.jwt.Orientation;
+import eu.webtoolkit.jwt.WAbstractItemModel;
 import eu.webtoolkit.jwt.WAbstractTableModel;
 import eu.webtoolkit.jwt.WContainerWidget;
+import eu.webtoolkit.jwt.WDate;
 import eu.webtoolkit.jwt.WLineEdit;
 import eu.webtoolkit.jwt.WMenu;
 import eu.webtoolkit.jwt.WModelIndex;
@@ -32,6 +34,9 @@ import eu.webtoolkit.jwt.WString;
 import eu.webtoolkit.jwt.WTemplate;
 import eu.webtoolkit.jwt.WWidget;
 import eu.webtoolkit.jwt.chart.Axis;
+import eu.webtoolkit.jwt.chart.AxisScale;
+import eu.webtoolkit.jwt.chart.AxisValue;
+import eu.webtoolkit.jwt.chart.ChartType;
 import eu.webtoolkit.jwt.chart.SeriesType;
 import eu.webtoolkit.jwt.chart.WCartesianChart;
 import eu.webtoolkit.jwt.chart.WDataSeries;
@@ -58,15 +63,20 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.io.BaseEncoding.DecodingException;
 
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -105,10 +115,10 @@ public class TeamPanel extends CollapsablePanel {
     private final Config config;
     private final Jedis jedis;
     
-    private static final class EventsModel extends WAbstractTableModel {
+    private static final class EventsModel extends WAbstractItemModel {
     	private List<TagSeenEvent> events = Collections.emptyList();
     	private Instant oneHourAgo = Instant.now().minus(1L, ChronoUnit.HOURS);
-    	
+
     	public void setEvents(Instant oneHourAgo, List<TagSeenEvent> events) {
     		this.oneHourAgo = oneHourAgo;
     		this.events = events;
@@ -122,27 +132,43 @@ public class TeamPanel extends CollapsablePanel {
 
 		@Override
 		public int getRowCount(WModelIndex parent) {
-			return Math.max(0, events.size() - 1);
+			int res = Math.max(0, events.size() - 1);
+            LOG.debug("Res: {}", res);
+            return res;
 		}
 
-		@Override
+        @Override
+        public WModelIndex getParent(WModelIndex wModelIndex) {
+            return null;
+        }
+
+        @Override
 		public Object getData(WModelIndex index, int role) {
+            if (events.size() < 2) {
+                LOG.error("Events size is wrong!");
+                return null;
+            }
 			if (role == ItemDataRole.DisplayRole) {
 				if (index.getRow() >= events.size() - 1 || index.getColumn() >= 2) {
+                    LOG.error("Returning null!");
 					return null;
 				}
-                if (index.getRow() < 0) {
-                    return 0; // TODO: What to do if we don't have enough events?
-                }
 				if (index.getColumn() == 0) {
-					return Duration.between(oneHourAgo, events.get(index.getRow() + 1).getTime()).toMillis() / 1000D;
+                    return -events.size() + 1 + index.getRow();
 				} else if (index.getColumn() == 1) {
-					return Duration.between(events.get(index.getRow()).getTime(), events.get(index.getRow() + 1).getTime()).toMillis() / 1000D;
+					double res = Duration.between(events.get(index.getRow()).getTime(), events.get(index.getRow() + 1).getTime()).toMillis() / 1000D;
+                    LOG.debug("Dur: {}", res);
+                    return res;
 				}
 			}
 			return null;
 		}
-    	
+
+        @Override
+        public WModelIndex getIndex(int row, int col, WModelIndex wModelIndex) {
+            return createIndex(row, col, null);
+        }
+
     }
     
     private final SharedState.SnapshotScoreListener scoreListener = this::processNewScore;
@@ -179,10 +205,10 @@ public class TeamPanel extends CollapsablePanel {
         }
     }
     
-    private Set<TagId> oldTags = new HashSet<TagId>();
+    private Set<TagId> oldTags = new HashSet<>();
     
     private void updateTags(Snapshot snapshot) {
-    	Set<TagId> newTags = new HashSet<TagId>();
+    	Set<TagId> newTags = new HashSet<>();
     	snapshot.getTeamTagMap().getTagToTeam().forEach((tag, teamNb) -> {
     		if (team.getTeamNb() == teamNb) {
     			newTags.add(tag);
@@ -248,7 +274,18 @@ public class TeamPanel extends CollapsablePanel {
                 }
             }
             for (int i = 0; i < config.getNbReaders(); i++) {
-            	itemModels.get(i).setEvents(anHourAgo, eventLists.get(i));
+                List<TagSeenEvent> eventList = eventLists.get(i);
+                List<TagSeenEvent> shortenedEventList = new ArrayList<>();
+                if (eventList.size() > 40) {
+                    for (int j = eventList.size() - 40; j < eventList.size(); j++) {
+                        shortenedEventList.add(eventList.get(j));
+                    }
+                } else {
+                    shortenedEventList = eventList;
+                }
+                itemModels.get(i).setEvents(anHourAgo, shortenedEventList);
+                LOG.debug("Min: {}, max: {}", charts.get(i).getAxis(Axis.XAxis).getMinimum(),
+                        charts.get(i).getAxis(Axis.XAxis).getMaximum());
             }
     	} catch (JedisConnectionException e) {
     		LOG.error("Couldn't fetch events", e);
@@ -307,17 +344,17 @@ public class TeamPanel extends CollapsablePanel {
         barContent.bindWidget("actual-progress", actualProgress);
         
         for (int i = 0; i < config.getNbReaders(); i++) {
-        	WCartesianChart readerChart = new WCartesianChart();
+        	WCartesianChart readerChart = new WCartesianChart(ChartType.ScatterPlot, chartContainer);
         	readerChart.addStyleClass("reader-chart");
         	EventsModel itemModel = new EventsModel();
         	readerChart.setModel(itemModel);
-        	readerChart.setXSeriesColumn(0);
-        	WDataSeries series = new WDataSeries(1, SeriesType.LineSeries);
+        	WDataSeries series = new WDataSeries(1, SeriesType.BarSeries);
         	readerChart.addSeries(series);
         	readerChart.resize(300, 200);
-        	readerChart.getAxis(Axis.XAxis).setRange(-3600, 0);
-        	readerChart.getAxis(Axis.YAxis).setMinimum(0);
-        	chartContainer.addWidget(readerChart);
+            readerChart.getAxis(Axis.XAxis).setRange(-40, 0);
+            readerChart.getAxis(Axis.YAxis).setMinimum(0);
+            readerChart.setXSeriesColumn(0);
+            readerChart.setAutoLayoutEnabled(true);
         	charts.add(readerChart);
         	itemModels.add(itemModel);
         }

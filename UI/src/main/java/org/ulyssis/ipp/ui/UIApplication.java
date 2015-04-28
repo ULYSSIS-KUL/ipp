@@ -44,7 +44,7 @@ public class UIApplication extends WApplication {
 
         getRoot().setStyleClass("container");
 
-        useStyleSheet(new WLink("style.css"));
+        useStyleSheet(new WLink("/style.css"));
 
         new HeaderWidget(getRoot());
         new ContestControlPanel(getRoot());

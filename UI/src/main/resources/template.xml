@@ -20,12 +20,12 @@
     	Control
     </message>
     <message id="control-panel-content">
-    	Current message: ${current-message}
-    	${message-edit} ${message-button}
-    	Current status: ${current-status}
-    	${status-combo} ${status-button}
-    	${start-button}
-    	${stop-button}
+    	<div>Current message:<br/> ${current-message}</div>
+    	<div>${message-edit}<br/> ${message-button}</div>
+    	<div>Current status: ${current-status}</div>
+    	<div>${status-combo} ${status-button}</div>
+    	<div>${start-button}</div>
+    	<div>${stop-button}</div>
     </message>
     <message id="log-panel-bar">
     	Log ${message-time} ${message-type} ${message}

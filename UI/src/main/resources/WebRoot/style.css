@@ -18,7 +18,7 @@ body {
 }
 
 .collapsable-panel.open {
-    height: 250px;
+    height: 280px;
 }
 
 .collapsable-panel.closed > .content {

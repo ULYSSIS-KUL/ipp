@@ -24,6 +24,7 @@ import org.ulyssis.ipp.config.Options;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -43,6 +44,9 @@ public final class PublisherOptions extends Options {
     @Option(name="-o", usage="The file to write the score to", aliases={"--out", "--output"}, metaVar="<output>", required=true)
     private Path outputFile;
 
+    @Option(name="--http", usage="The HTTP host to push the score to", metaVar="<uri>", required=false)
+    private URL http = null;
+
     public static Optional<PublisherOptions> publisherOptionsFromArgs(String[] args) {
         Optional<Options> options = (new PublisherOptions().doFromArgs(args));
         if (options.isPresent()) {
@@ -58,5 +62,9 @@ public final class PublisherOptions extends Options {
 
     public Path getOutputFile() {
         return outputFile;
+    }
+
+    public URL getHttp() {
+        return http;
     }
 }

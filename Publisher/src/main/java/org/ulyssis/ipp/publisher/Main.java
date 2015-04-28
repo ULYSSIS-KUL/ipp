@@ -27,10 +27,26 @@ import org.ulyssis.ipp.snapshot.Snapshot;
 import org.ulyssis.ipp.snapshot.SnapshotListener;
 import org.ulyssis.ipp.utils.Serialization;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.security.cert.X509Certificate;
+import java.util.Base64;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -51,6 +67,9 @@ public final class Main {
 
     private final LinkedBlockingQueue<Snapshot> snapshotQueue = new LinkedBlockingQueue<>();
 
+    private final Thread httpThread;
+    private final LinkedBlockingQueue<Snapshot> snapshotsToSubmit = new LinkedBlockingQueue<>();
+
     private Main(PublisherOptions options) {
         this.options = options;
         Runtime.getRuntime().addShutdownHook(new Thread(this::interruptHook));
@@ -60,6 +79,96 @@ public final class Main {
         snapshotListener.addListener(onSnapshot);
         snapshotListener.trigger();
         snapshotThread.start();
+        if (options.getHttp() != null) {
+            try {
+                TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
+                    public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                        return null;
+                    }
+
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                    }
+
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                    }
+                }
+                };
+
+                // Install the all-trusting trust manager
+                SSLContext sc = SSLContext.getInstance("SSL");
+                sc.init(null, trustAllCerts, new java.security.SecureRandom());
+                HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+
+                // Create all-trusting host name verifier
+                HostnameVerifier allHostsValid = new HostnameVerifier() {
+                    public boolean verify(String hostname, SSLSession session) {
+                        return true;
+                    }
+                };
+
+                // Install the all-trusting host verifier
+                HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+            } catch (Exception e) {
+                LOG.error("Problem registering all-trusting SSL manager");
+            }
+
+            httpThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        while (!Thread.currentThread().isInterrupted()) {
+                            Snapshot snapshot = snapshotsToSubmit.take();
+                            while (snapshotsToSubmit.size() > 0) {
+                                // Skip ahead
+                                snapshot = snapshotsToSubmit.take();
+                            }
+                            URL url = options.getHttp();
+                            HttpURLConnection connection = null;
+                            try {
+                                connection = (HttpURLConnection) url.openConnection();
+                                connection.setRequestMethod("POST");
+                                connection.setRequestProperty("Content-Type",
+                                        "application/json");
+                                String auth = url.getUserInfo();
+                                if (auth != null) {
+                                    String encoded = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
+                                    connection.setRequestProperty("Authorization", "Basic " + encoded);
+                                }
+                                connection.setUseCaches(false);
+                                connection.setDoInput(true);
+                                connection.setDoOutput(true);
+
+                                DataOutputStream wr = new DataOutputStream(
+                                        connection.getOutputStream()
+                                );
+                                Serialization.getJsonMapper().writeValue(wr, snapshot);
+                                wr.flush();
+                                wr.close();
+
+                                InputStream is = connection.getInputStream();
+                                BufferedReader rd = new BufferedReader(new InputStreamReader(is));
+                                String line;
+                                StringBuilder response = new StringBuilder();
+                                while((line = rd.readLine()) != null) {
+                                    LOG.debug(line);
+                                }
+                                rd.close();
+                            } catch (Exception e) {
+                                LOG.error("Error submitting JSON via HTTP", e);
+                            } finally {
+                                if (connection != null) {
+                                    connection.disconnect();
+                                }
+                            }
+                        }
+                    } catch (InterruptedException ignored) {
+                    }
+                }
+            });
+            httpThread.start();
+        } else {
+            httpThread = null;
+        }
         try {
             while (true) {
                 Snapshot snapshot = snapshotQueue.take();
@@ -73,6 +182,7 @@ public final class Main {
         LOG.info("Stopping Publisher");
         service.shutdownNow();
         snapshotListener.stop();
+        httpThread.interrupt();
         LOG.info("Bye bye!");
         Configurator.shutdown((LoggerContext) LogManager.getContext());
     }
@@ -93,6 +203,9 @@ public final class Main {
             nextProcessingOfSnapshot = service.schedule(() -> processSnapshot(snapshot), 1L, TimeUnit.SECONDS);
         } catch (IOException e) {
             LOG.error("Error writing score", e);
+        }
+        if (options.getHttp() != null) {
+            snapshotsToSubmit.add(snapshot);
         }
     }
 

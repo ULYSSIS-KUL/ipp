@@ -102,6 +102,7 @@ public final class Processor implements Runnable {
     private final ArrayList<Snapshot> snapshots;
 
     private final Map<Integer,Long> lastUpdateMap = new HashMap<>();
+    private final Map<Integer,Instant> lastUpdateInstantMap = new HashMap<>();
 
     public Processor(final ProcessorOptions options) {
         URI uri = options.getRedisUri();
@@ -168,12 +169,16 @@ public final class Processor implements Runnable {
                 saveLatestSnapshot(t);
                 t.exec();
             }
-            for (Event event : events) {
+            for (int i = 0; i < events.size(); ++i) {
+                Event event = events.get(i);
                 if (event instanceof TagSeenEvent) {
                     if (lastUpdateMap.containsKey(((TagSeenEvent) event).getReaderId())) {
-                        lastUpdateMap.put(((TagSeenEvent) event).getReaderId(),lastUpdateMap.get(((TagSeenEvent) event).getReaderId()) + 1L);
+                        if (!lastUpdateInstantMap.get(((TagSeenEvent) event).getReaderId()).equals(event.getTime())) {
+                            lastUpdateMap.put(((TagSeenEvent) event).getReaderId(),lastUpdateMap.get(((TagSeenEvent) event).getReaderId()) + 1L);
+                        }
                     } else {
                         lastUpdateMap.put(((TagSeenEvent) event).getReaderId(), 0L);
+                        lastUpdateInstantMap.put(((TagSeenEvent) event).getReaderId(),event.getTime());
                     }
                 }
             }

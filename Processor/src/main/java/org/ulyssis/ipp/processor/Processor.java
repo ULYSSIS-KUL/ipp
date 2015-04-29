@@ -175,6 +175,7 @@ public final class Processor implements Runnable {
                     if (lastUpdateMap.containsKey(((TagSeenEvent) event).getReaderId())) {
                         if (!lastUpdateInstantMap.get(((TagSeenEvent) event).getReaderId()).equals(event.getTime())) {
                             lastUpdateMap.put(((TagSeenEvent) event).getReaderId(),lastUpdateMap.get(((TagSeenEvent) event).getReaderId()) + 1L);
+                            lastUpdateInstantMap.put(((TagSeenEvent) event).getReaderId(),event.getTime());
                         }
                     } else {
                         lastUpdateMap.put(((TagSeenEvent) event).getReaderId(), 0L);

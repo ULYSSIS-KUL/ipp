@@ -46,11 +46,11 @@ public final class ReaderListener extends JedisHelper.CallBackPubSub {
     /** The processor that this ReaderListener belongs to (and will push updates to) */
     private final Consumer<Event> updateConsumer;
 
-    public ReaderListener(int id, final Consumer<Event> updateConsumer) {
+    public ReaderListener(int id, final Consumer<Event> updateConsumer, long lastUpdate) {
         this.updateConsumer = updateConsumer;
         this.remoteJedis = JedisHelper.get(Config.getCurrentConfig().getReader(id).getURI());
-        this.lastUpdate = -1L;
-        syncUpdates();
+        this.lastUpdate = lastUpdate;
+        //syncUpdates();
 
         this.addOnMessageListener(this::onMessageListener);
     }

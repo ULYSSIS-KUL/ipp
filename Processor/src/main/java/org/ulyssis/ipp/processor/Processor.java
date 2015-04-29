@@ -44,6 +44,7 @@ import org.ulyssis.ipp.snapshot.events.MessageEvent;
 import org.ulyssis.ipp.snapshot.events.RemoveTagEvent;
 import org.ulyssis.ipp.snapshot.events.StartEvent;
 import org.ulyssis.ipp.snapshot.events.StatusChangeEvent;
+import org.ulyssis.ipp.snapshot.events.TagSeenEvent;
 import org.ulyssis.ipp.snapshot.events.UpdateFrequencyChangeEvent;
 import org.ulyssis.ipp.status.StatusMessage;
 import org.ulyssis.ipp.status.StatusReporter;
@@ -61,7 +62,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -97,6 +100,8 @@ public final class Processor implements Runnable {
 
     private final List<Event> events;
     private final ArrayList<Snapshot> snapshots;
+
+    private final Map<Integer,Long> lastUpdateMap = new HashMap<>();
 
     public Processor(final ProcessorOptions options) {
         URI uri = options.getRedisUri();
@@ -162,6 +167,15 @@ public final class Processor implements Runnable {
                 saveSnapshotsFrom(1, t);
                 saveLatestSnapshot(t);
                 t.exec();
+            }
+            for (Event event : events) {
+                if (event instanceof TagSeenEvent) {
+                    if (lastUpdateMap.containsKey(((TagSeenEvent) event).getReaderId())) {
+                        lastUpdateMap.put(((TagSeenEvent) event).getReaderId(),lastUpdateMap.get(((TagSeenEvent) event).getReaderId()) + 1L);
+                    } else {
+                        lastUpdateMap.put(((TagSeenEvent) event).getReaderId(), 0L);
+                    }
+                }
             }
         } catch (JedisConnectionException | IOException e) {
             LOG.error("Couldn't restore from Redis", e);
@@ -261,7 +275,12 @@ public final class Processor implements Runnable {
         String updateChannel = JedisHelper.dbLocalChannel(Config.getCurrentConfig().getUpdateChannel(), uri);
         try {
             Jedis subJedis = JedisHelper.get(uri);
-            ReaderListener listener = new ReaderListener(readerId, this::queueEvent);
+            ReaderListener listener;
+            if (lastUpdateMap.containsKey(readerId)) {
+                listener = new ReaderListener(readerId, this::queueEvent, lastUpdateMap.get(readerId));
+            } else {
+                listener = new ReaderListener(readerId, this::queueEvent, -1);
+            }
             listeners.add(listener);
             Thread thread = new Thread(() -> {
                 try {

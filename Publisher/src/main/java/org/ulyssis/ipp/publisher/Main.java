@@ -34,7 +34,6 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -68,7 +67,7 @@ public final class Main {
     private final LinkedBlockingQueue<Snapshot> snapshotQueue = new LinkedBlockingQueue<>();
 
     private final Thread httpThread;
-    private final LinkedBlockingQueue<Snapshot> snapshotsToSubmit = new LinkedBlockingQueue<>();
+    private final LinkedBlockingQueue<Score> scoresToSubmit = new LinkedBlockingQueue<>();
 
     private Main(PublisherOptions options) {
         this.options = options;
@@ -117,10 +116,10 @@ public final class Main {
                 public void run() {
                     try {
                         while (!Thread.currentThread().isInterrupted()) {
-                            Snapshot snapshot = snapshotsToSubmit.take();
-                            while (snapshotsToSubmit.size() > 0) {
+                            Score score = scoresToSubmit.take();
+                            while (scoresToSubmit.size() > 0) {
                                 // Skip ahead
-                                snapshot = snapshotsToSubmit.take();
+                                score = scoresToSubmit.take();
                             }
                             URL url = options.getHttp();
                             HttpURLConnection connection = null;
@@ -141,7 +140,7 @@ public final class Main {
                                 DataOutputStream wr = new DataOutputStream(
                                         connection.getOutputStream()
                                 );
-                                Serialization.getJsonMapper().writeValue(wr, snapshot);
+                                Serialization.getJsonMapper().writeValue(wr, score);
                                 wr.flush();
                                 wr.close();
 
@@ -205,7 +204,7 @@ public final class Main {
             LOG.error("Error writing score", e);
         }
         if (options.getHttp() != null) {
-            snapshotsToSubmit.add(snapshot);
+            scoresToSubmit.add(score);
         }
     }
 

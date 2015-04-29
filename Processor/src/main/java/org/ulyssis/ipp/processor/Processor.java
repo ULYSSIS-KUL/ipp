@@ -256,15 +256,34 @@ public final class Processor implements Runnable {
         LOG.info("Bye bye!");
     }
 
-    private void spawnReaderListener(int readerId) {
+    private void trySpawnReaderListener(int readerId) {
         URI uri = Config.getCurrentConfig().getReader(readerId).getURI();
         String updateChannel = JedisHelper.dbLocalChannel(Config.getCurrentConfig().getUpdateChannel(), uri);
-        Jedis subJedis = JedisHelper.get(uri);
-        ReaderListener listener = new ReaderListener(readerId, this::queueEvent);
-        listeners.add(listener);
-        Thread thread = new Thread(() -> subJedis.subscribe(listener, updateChannel));
-        threads.add(thread);
-        thread.start();
+        try {
+            Jedis subJedis = JedisHelper.get(uri);
+            ReaderListener listener = new ReaderListener(readerId, this::queueEvent);
+            listeners.add(listener);
+            Thread thread = new Thread(() -> {
+                try {
+                    LOG.info("Reader listener {} subscribing to channel {} on uri {}", readerId, updateChannel, uri);
+                    subJedis.subscribe(listener, updateChannel);
+                } catch (JedisConnectionException e) {
+                    LOG.error("Reader listener {} stopped (uri: {}) because of a connection failure, scheduling reconnect",
+                            readerId, uri, e);
+                    executorService.schedule(() -> trySpawnReaderListener(readerId), 5L, TimeUnit.SECONDS);
+                }
+            });
+            threads.add(thread);
+            thread.start();
+            // TODO: What if this thread exits because of no connection?
+        } catch (JedisConnectionException e) {
+            LOG.error("Couldn't connect to reader {}, uri {}, scheduling reconnect", readerId, uri, e);
+            executorService.schedule(() -> trySpawnReaderListener(readerId), 5L, TimeUnit.SECONDS);
+        }
+    }
+
+    private void spawnReaderListener(int readerId) {
+        executorService.submit(() -> trySpawnReaderListener(readerId));
     }
 
     private void processEvent(Event event) {

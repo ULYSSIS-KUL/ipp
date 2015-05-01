@@ -50,7 +50,7 @@ public final class ReaderListener extends JedisHelper.CallBackPubSub {
         this.updateConsumer = updateConsumer;
         this.remoteJedis = JedisHelper.get(Config.getCurrentConfig().getReader(id).getURI());
         this.lastUpdate = lastUpdate;
-        //syncUpdates();
+        syncUpdates();
 
         this.addOnMessageListener(this::onMessageListener);
     }
@@ -75,11 +75,11 @@ public final class ReaderListener extends JedisHelper.CallBackPubSub {
      * Batch process all updates on startup
      */
     private void syncUpdates() {
-        List<byte[]> updates = remoteJedis.lrange(Config.getCurrentConfig().getUpdatesList().getBytes(), 0L, -1L);
+        List<byte[]> updates = remoteJedis.lrange(Config.getCurrentConfig().getUpdatesList().getBytes(), lastUpdate + 1, -1L);
         for (byte[] update : updates) {
             processMessage(update);
         }
-        lastUpdate = updates.size() - 1L;
+        lastUpdate += updates.size();
     }
 
     /**

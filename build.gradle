@@ -1,7 +1,18 @@
 apply plugin: 'java'
 apply plugin: 'idea'
+apply plugin: 'com.github.kt3k.coveralls'
 
 defaultTasks 'updateSubmodules', 'lib/jwt:dist', 'check', 'installApp', 'war', 'alljavadoc'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.3.1'
+    }
+}
 
 task updateSubmodules(type: Exec) {
 	commandLine 'git', 'submodule', 'update'
@@ -17,6 +28,7 @@ idea {
 subprojects {
     if (name == 'Processor' || name == 'Reader' || name == 'UI' || name == 'shared' || name == 'Replayer') {
         apply plugin: 'java'
+        apply plugin: 'jacoco'
 
         sourceCompatibility = '1.8'
         version = '0.3'
@@ -37,6 +49,13 @@ subprojects {
             testCompile group: 'org.mockito', name: 'mockito-all', version: '1.+'
             // Hamcrest-JSON provides sameJson
             testCompile group: 'uk.co.datumedge', name: 'hamcrest-json', version: '0.+'
+        }
+
+        jacocoTestReport {
+            reports {
+                xml.enabled = true
+                html.enabled = true
+            }
         }
     }
 }

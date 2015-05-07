@@ -1,6 +1,5 @@
 apply plugin: 'java'
 apply plugin: 'idea'
-apply plugin: 'com.github.kt3k.coveralls'
 
 defaultTasks 'updateSubmodules', 'lib/jwt:dist', 'check', 'installApp', 'war', 'alljavadoc'
 
@@ -29,6 +28,7 @@ subprojects {
     if (name == 'Processor' || name == 'Reader' || name == 'UI' || name == 'shared' || name == 'Replayer') {
         apply plugin: 'java'
         apply plugin: 'jacoco'
+        apply plugin: 'com.github.kt3k.coveralls'
 
         sourceCompatibility = '1.8'
         version = '0.3'

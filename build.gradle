@@ -1,7 +1,7 @@
 apply plugin: 'java'
 apply plugin: 'idea'
 
-defaultTasks 'updateSubmodules', 'lib/jwt:dist', 'check', 'installApp', 'war', 'alljavadoc'
+defaultTasks 'updateSubmodules', 'lib/jwt:dist', 'check', 'installDist', 'war', 'alljavadoc'
 
 buildscript {
     repositories {
@@ -98,6 +98,14 @@ task jacocoRootReport(type: org.gradle.testing.jacoco.tasks.JacocoReport) {
         xml.enabled = true
         csv.enabled = false
         xml.destination = "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
+    }
+    onlyIf = {
+        true
+    }
+    doFirst {
+        executionData = files(executionData.findAll {
+            it.exists()
+        })
     }
 }
 

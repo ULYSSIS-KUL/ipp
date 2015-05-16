@@ -65,10 +65,6 @@ subprojects {
     }
 }
 
-coveralls {
-    sourceDirs = files(subprojects.sourceSets.main.allSource.srcDirs).files.absolutePath
-}
-
 def exportedProjects = [
     ":shared",
     ":Processor",
@@ -107,6 +103,11 @@ task jacocoRootReport(type: org.gradle.testing.jacoco.tasks.JacocoReport) {
             it.exists()
         })
     }
+}
+
+coveralls {
+    def testedProjects = exportedProjects.collect { project(it) }
+    sourceDirs = files(testedProjects.sourceSets.main.allSource.srcDirs).files.absolutePath
 }
 
 task alljavadoc(type: Javadoc) {

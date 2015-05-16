@@ -3,4 +3,4 @@ jdk:
   - oraclejdk8
 install: true
 script: ./gradlew
-after_success: ./gradlew jacocoTestReport coveralls
+after_success: ./gradlew jacocoRootReport coveralls

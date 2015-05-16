@@ -1,0 +1,20 @@
+---
+- hosts: all
+  sudo: yes
+  pre_tasks:
+    - name: update apt cache
+      apt: update_cache=yes
+- hosts: readers
+  sudo: yes
+  roles:
+    - redis
+    - java
+- hosts: processors
+  sudo: yes
+  roles:
+    - redis
+    - java
+- hosts: ui
+  sudo: yes
+  roles:
+    - java

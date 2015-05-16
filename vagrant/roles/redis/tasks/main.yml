@@ -1,0 +1,3 @@
+---
+- name: Make sure Redis is up to date
+  apt: pkg=redis-server state=latest

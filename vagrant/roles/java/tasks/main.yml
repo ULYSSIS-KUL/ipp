@@ -1,0 +1,5 @@
+---
+- name: add Java PPA
+  apt_repository: repo='ppa:openjdk-r/ppa'
+- name: make sure Java 8 is the latest version
+  apt: pkg=openjdk-8-jdk state=latest

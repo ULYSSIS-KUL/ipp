@@ -13,6 +13,8 @@ buildscript {
     }
 }
 
+apply plugin: 'com.github.kt3k.coveralls'
+
 task updateSubmodules(type: Exec) {
 	commandLine 'git', 'submodule', 'update'
 }
@@ -24,11 +26,13 @@ idea {
     }
 }
 
+allprojects {
+    apply plugin: 'jacoco'
+}
+
 subprojects {
     if (name == 'Processor' || name == 'Reader' || name == 'UI' || name == 'shared' || name == 'Replayer') {
         apply plugin: 'java'
-        apply plugin: 'jacoco'
-        apply plugin: 'com.github.kt3k.coveralls'
 
         sourceCompatibility = '1.8'
         version = '0.3'
@@ -55,9 +59,14 @@ subprojects {
             reports {
                 xml.enabled = true
                 html.enabled = true
+                csv.enabled = false
             }
         }
     }
+}
+
+coveralls {
+    sourceDirs = files(subprojects.sourceSets.main.allSource.srcDirs).files.absolutePath
 }
 
 def exportedProjects = [
@@ -76,6 +85,20 @@ configurations {
 
 dependencies {
     asciidoclet 'org.asciidoctor:asciidoclet:0.+'
+}
+
+task jacocoRootReport(type: org.gradle.testing.jacoco.tasks.JacocoReport) {
+    def testedProjects = exportedProjects.collect { project(it) }
+    dependsOn = testedProjects.test
+    sourceDirectories = files(testedProjects.sourceSets.main.allSource.srcDirs)
+    classDirectories =  files(testedProjects.sourceSets.main.output)
+    executionData = files(testedProjects.jacocoTestReport.executionData)
+    reports {
+        html.enabled = true
+        xml.enabled = true
+        csv.enabled = false
+        xml.destination = "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
+    }
 }
 
 task alljavadoc(type: Javadoc) {

@@ -1,3 +1,7 @@
 ---
 - name: Make sure Redis is up to date
   apt: pkg=redis-server state=latest
+- name: Put Redis configuration in place
+  copy: src=redis.conf dest=/etc/redis/redis.conf owner=root
+  notify:
+    - restart redis

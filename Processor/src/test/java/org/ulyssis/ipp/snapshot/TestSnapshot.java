@@ -27,10 +27,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.config.ReaderConfig;
-import org.ulyssis.ipp.snapshot.events.AddTagEvent;
-import org.ulyssis.ipp.snapshot.events.EndEvent;
-import org.ulyssis.ipp.snapshot.events.StartEvent;
-import org.ulyssis.ipp.snapshot.events.TagSeenEvent;
 import org.ulyssis.ipp.TagId;
 import uk.co.datumedge.hamcrest.json.SameJSONAs;
 
@@ -98,7 +94,7 @@ public class TestSnapshot {
     public void testAddTagEvent() throws Exception {
         Snapshot snapshot = Snapshot.builder(Instant.EPOCH).build();
         AddTagEvent addTagEvent = new AddTagEvent(Instant.EPOCH.plus(1, ChronoUnit.SECONDS), new TagId("ABCD"), 0);
-        snapshot = addTagEvent.apply(snapshot);
+        snapshot = addTagEvent.doApply(snapshot);
         MatcherAssert.assertThat(snapshot.getTeamTagMap().tagToTeam("ABCD").get(), Matchers.equalTo(0));
     }
 
@@ -106,15 +102,15 @@ public class TestSnapshot {
     public void testTagSeenEvents_ShouldAddLap() throws Exception {
         Snapshot snapshot = Snapshot.builder(Instant.EPOCH).build();
         AddTagEvent addTagEvent = new AddTagEvent(Instant.EPOCH.plus(1, ChronoUnit.SECONDS), new TagId("ABCD"), 0);
-        snapshot = addTagEvent.apply(snapshot);
+        snapshot = addTagEvent.doApply(snapshot);
         StartEvent startEvent = new StartEvent(Instant.EPOCH.plus(2, ChronoUnit.SECONDS));
-        snapshot = startEvent.apply(snapshot);
+        snapshot = startEvent.doApply(snapshot);
         TagSeenEvent tagSeenEvent =
                 new TagSeenEvent(Instant.EPOCH.plus(3, ChronoUnit.SECONDS), new TagId("ABCD"), 0);
-        snapshot = tagSeenEvent.apply(snapshot);
+        snapshot = tagSeenEvent.doApply(snapshot);
         TagSeenEvent tagSeenEvent2 =
                 new TagSeenEvent(Instant.EPOCH.plus(60, ChronoUnit.SECONDS), new TagId("ABCD"), 0);
-        snapshot = tagSeenEvent2.apply(snapshot);
+        snapshot = tagSeenEvent2.doApply(snapshot);
         MatcherAssert.assertThat(snapshot.getTeamStates().getNbLapsForTeam(0), Matchers.equalTo(1));
     }
 
@@ -123,13 +119,13 @@ public class TestSnapshot {
         Snapshot snapshot = Snapshot.builder(Instant.EPOCH).build();
         AddTagEvent addTagEvent =
                 new AddTagEvent(Instant.EPOCH.plus(1, ChronoUnit.SECONDS), new TagId("ABCD"), 0);
-        snapshot = addTagEvent.apply(snapshot);
+        snapshot = addTagEvent.doApply(snapshot);
         TagSeenEvent tagSeenEvent =
                 new TagSeenEvent(Instant.EPOCH.plus(2, ChronoUnit.SECONDS), new TagId("ABCD"), 0);
-        snapshot = tagSeenEvent.apply(snapshot);
+        snapshot = tagSeenEvent.doApply(snapshot);
         TagSeenEvent tagSeenEvent2 =
                 new TagSeenEvent(Instant.EPOCH.plus(3, ChronoUnit.SECONDS), new TagId("ABCD"), 0);
-        snapshot = tagSeenEvent2.apply(snapshot);
+        snapshot = tagSeenEvent2.doApply(snapshot);
         MatcherAssert.assertThat(snapshot.getTeamStates().getNbLapsForTeam(0), Matchers.equalTo(0));
     }
 
@@ -137,17 +133,17 @@ public class TestSnapshot {
     public void testTagSeenEventAfterEnd_ShouldBeIgnored() throws Exception {
         Snapshot snapshot = Snapshot.builder(Instant.EPOCH).build();
         AddTagEvent addTagEvent = new AddTagEvent(Instant.EPOCH.plus(1, ChronoUnit.SECONDS), new TagId("DCBA"), 3);
-        snapshot = addTagEvent.apply(snapshot);
+        snapshot = addTagEvent.doApply(snapshot);
         StartEvent startEvent = new StartEvent(Instant.EPOCH.plus(2, ChronoUnit.SECONDS));
-        snapshot = startEvent.apply(snapshot);
+        snapshot = startEvent.doApply(snapshot);
         TagSeenEvent tagSeenEvent =
                 new TagSeenEvent(Instant.EPOCH.plus(3, ChronoUnit.SECONDS), new TagId("DCBA"), 0);
-        snapshot = tagSeenEvent.apply(snapshot);
+        snapshot = tagSeenEvent.doApply(snapshot);
         EndEvent endEvent = new EndEvent(Instant.EPOCH.plus(50, ChronoUnit.SECONDS));
-        snapshot = endEvent.apply(snapshot);
+        snapshot = endEvent.doApply(snapshot);
         TagSeenEvent tagSeenEvent2 =
                 new TagSeenEvent(Instant.EPOCH.plus(100, ChronoUnit.SECONDS), new TagId("DCBA"), 0);
-        snapshot = tagSeenEvent2.apply(snapshot);
+        snapshot = tagSeenEvent2.doApply(snapshot);
         MatcherAssert.assertThat(snapshot.getTeamStates().getNbLapsForTeam(3), Matchers.equalTo(0));
     }
 
@@ -156,15 +152,15 @@ public class TestSnapshot {
         TagId tag = new TagId("DCBA");
         Snapshot snapshot = Snapshot.builder(Instant.EPOCH).build();
         AddTagEvent addTagEvent = new AddTagEvent(Instant.EPOCH, tag, 3);
-        snapshot = addTagEvent.apply(snapshot);
+        snapshot = addTagEvent.doApply(snapshot);
         StartEvent startEvent = new StartEvent(Instant.EPOCH);
-        snapshot = startEvent.apply(snapshot);
+        snapshot = startEvent.doApply(snapshot);
         TagSeenEvent tagSeenEvent =
                 new TagSeenEvent(Instant.EPOCH.plus(10, ChronoUnit.SECONDS), tag, 0);
-        snapshot = tagSeenEvent.apply(snapshot);
+        snapshot = tagSeenEvent.doApply(snapshot);
         TagSeenEvent tagSeenEvent2 =
                 new TagSeenEvent(Instant.EPOCH.plus(50, ChronoUnit.SECONDS), tag, 1);
-        snapshot = tagSeenEvent2.apply(snapshot);
+        snapshot = tagSeenEvent2.doApply(snapshot);
         double speedShouldBe = 100D / (50D - 10D);
         MatcherAssert.assertThat(snapshot.getTeamStates().getStateForTeam(3).get()
             .getPredictedSpeed(), Matchers.equalTo(speedShouldBe));
@@ -177,15 +173,15 @@ public class TestSnapshot {
         TagId tag = new TagId("DCBA");
         Snapshot snapshot = Snapshot.builder(Instant.EPOCH).build();
         AddTagEvent addTagEvent = new AddTagEvent(Instant.EPOCH, tag, 3);
-        snapshot = addTagEvent.apply(snapshot);
+        snapshot = addTagEvent.doApply(snapshot);
         TagSeenEvent tagSeenEvent =
                 new TagSeenEvent(Instant.EPOCH.minus(10, ChronoUnit.SECONDS), tag, 0);
-        snapshot = tagSeenEvent.apply(snapshot);
+        snapshot = tagSeenEvent.doApply(snapshot);
         StartEvent startEvent = new StartEvent(Instant.EPOCH);
-        snapshot = startEvent.apply(snapshot);
+        snapshot = startEvent.doApply(snapshot);
         TagSeenEvent tagSeenEvent2 =
                 new TagSeenEvent(Instant.EPOCH.plus(50, ChronoUnit.SECONDS), tag, 1);
-        snapshot = tagSeenEvent2.apply(snapshot);
+        snapshot = tagSeenEvent2.doApply(snapshot);
         double speedShouldBe = 100D / 50D;
         MatcherAssert.assertThat(snapshot.getTeamStates().getStateForTeam(3).get()
                 .getPredictedSpeed(), Matchers.equalTo(speedShouldBe));

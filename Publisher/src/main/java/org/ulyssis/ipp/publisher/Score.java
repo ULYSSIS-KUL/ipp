@@ -21,7 +21,7 @@ import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.snapshot.Snapshot;
 import org.ulyssis.ipp.snapshot.TeamState;
 import org.ulyssis.ipp.snapshot.TeamStates;
-import org.ulyssis.ipp.snapshot.events.TagSeenEvent;
+import org.ulyssis.ipp.snapshot.TagSeenEvent;
 import org.ulyssis.ipp.updates.Status;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

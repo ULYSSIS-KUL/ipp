@@ -8,4 +8,6 @@ repositories {
 
 dependencies {
     compile project(':shared')
+
+    compile group: 'org.postgresql', name: 'postgresql', version: '9.4+'
 }

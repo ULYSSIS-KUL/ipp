@@ -15,14 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
-package org.ulyssis.ipp.snapshot.events;
+package org.ulyssis.ipp.snapshot;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.ulyssis.ipp.control.commands.Command;
 import org.ulyssis.ipp.control.commands.SetStatusCommand;
-import org.ulyssis.ipp.snapshot.Snapshot;
 import org.ulyssis.ipp.updates.Status;
 
 import java.time.Instant;
@@ -49,11 +48,16 @@ public final class StatusChangeEvent extends Event {
     }
 
     @Override
-    public Snapshot apply(Snapshot before) {
+    protected Snapshot doApply(Snapshot before) {
         Snapshot.Builder builder = Snapshot.builder(getTime()).fromSnapshot(before).withStatus(status);
         if (!before.getStatus().isPublic() && status.isPublic()) {
             builder.withPublicTeamStates(before.getTeamStates());
         }
         return builder.build();
+    }
+
+    @Override
+    public boolean isRemovable() {
+        return true;
     }
 }

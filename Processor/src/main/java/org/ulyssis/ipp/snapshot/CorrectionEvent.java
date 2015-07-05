@@ -15,14 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
-package org.ulyssis.ipp.snapshot.events;
+package org.ulyssis.ipp.snapshot;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.ulyssis.ipp.control.commands.Command;
 import org.ulyssis.ipp.control.commands.CorrectionCommand;
-import org.ulyssis.ipp.snapshot.Snapshot;
-import org.ulyssis.ipp.snapshot.TeamState;
-import org.ulyssis.ipp.snapshot.TeamStates;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -35,6 +32,7 @@ public final class CorrectionEvent extends Event {
     /**
      * Constructor for Jackson
      */
+    @SuppressWarnings("unused")
     private CorrectionEvent() {
         super(Instant.MIN);
     }
@@ -64,7 +62,7 @@ public final class CorrectionEvent extends Event {
         return correction;
     }
 
-    public Snapshot apply(Snapshot snapshot) {
+    protected Snapshot doApply(Snapshot snapshot) {
         TeamStates oldTeamStates = snapshot.getTeamStates();
         Optional<TeamState> oldTeamState = oldTeamStates.getStateForTeam(teamNb);
         TeamState newTeamState;
@@ -83,5 +81,10 @@ public final class CorrectionEvent extends Event {
         assert(command instanceof CorrectionCommand);
         CorrectionCommand cmd = (CorrectionCommand) command;
         return new CorrectionEvent(cmd.getTime(), cmd.getTeamNb(), cmd.getCorrection());
+    }
+
+    @Override
+    public boolean isRemovable() {
+        return true;
     }
 }

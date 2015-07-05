@@ -21,14 +21,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.updates.TagUpdate;
-import org.ulyssis.ipp.snapshot.events.Event;
-import org.ulyssis.ipp.snapshot.events.TagSeenEvent;
+import org.ulyssis.ipp.snapshot.Event;
+import org.ulyssis.ipp.snapshot.TagSeenEvent;
 import org.ulyssis.ipp.utils.JedisHelper;
 import org.ulyssis.ipp.utils.Serialization;
 import redis.clients.jedis.Jedis;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -46,10 +47,10 @@ public final class ReaderListener extends JedisHelper.CallBackPubSub {
     /** The processor that this ReaderListener belongs to (and will push updates to) */
     private final Consumer<Event> updateConsumer;
 
-    public ReaderListener(int id, final Consumer<Event> updateConsumer, long lastUpdate) {
+    public ReaderListener(int id, final Consumer<Event> updateConsumer, Optional<Long> lastUpdate) {
         this.updateConsumer = updateConsumer;
         this.remoteJedis = JedisHelper.get(Config.getCurrentConfig().getReader(id).getURI());
-        this.lastUpdate = lastUpdate;
+        this.lastUpdate = lastUpdate.orElse(-1L);
         syncUpdates();
 
         this.addOnMessageListener(this::onMessageListener);
@@ -75,7 +76,7 @@ public final class ReaderListener extends JedisHelper.CallBackPubSub {
      * Batch process all updates on startup
      */
     private void syncUpdates() {
-        List<byte[]> updates = remoteJedis.lrange(Config.getCurrentConfig().getUpdatesList().getBytes(), lastUpdate + 1, -1L);
+        List<byte[]> updates = remoteJedis.lrange(Config.getCurrentConfig().getUpdatesList().getBytes(), lastUpdate + 1L, -1L);
         for (byte[] update : updates) {
             processMessage(update);
         }

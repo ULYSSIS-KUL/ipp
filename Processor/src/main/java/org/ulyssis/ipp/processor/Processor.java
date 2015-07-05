@@ -35,37 +35,28 @@ import org.ulyssis.ipp.control.commands.SetUpdateFrequencyCommand;
 import org.ulyssis.ipp.control.handlers.EventCommandHandler;
 import org.ulyssis.ipp.control.handlers.PingHandler;
 import org.ulyssis.ipp.snapshot.Snapshot;
-import org.ulyssis.ipp.snapshot.events.AddTagEvent;
-import org.ulyssis.ipp.snapshot.events.CorrectionEvent;
-import org.ulyssis.ipp.snapshot.events.EndEvent;
-import org.ulyssis.ipp.snapshot.events.Event;
-import org.ulyssis.ipp.snapshot.events.IdentityEvent;
-import org.ulyssis.ipp.snapshot.events.MessageEvent;
-import org.ulyssis.ipp.snapshot.events.RemoveTagEvent;
-import org.ulyssis.ipp.snapshot.events.StartEvent;
-import org.ulyssis.ipp.snapshot.events.StatusChangeEvent;
-import org.ulyssis.ipp.snapshot.events.TagSeenEvent;
-import org.ulyssis.ipp.snapshot.events.UpdateFrequencyChangeEvent;
+import org.ulyssis.ipp.snapshot.AddTagEvent;
+import org.ulyssis.ipp.snapshot.CorrectionEvent;
+import org.ulyssis.ipp.snapshot.EndEvent;
+import org.ulyssis.ipp.snapshot.Event;
+import org.ulyssis.ipp.snapshot.MessageEvent;
+import org.ulyssis.ipp.snapshot.RemoveTagEvent;
+import org.ulyssis.ipp.snapshot.StartEvent;
+import org.ulyssis.ipp.snapshot.StatusChangeEvent;
+import org.ulyssis.ipp.snapshot.UpdateFrequencyChangeEvent;
 import org.ulyssis.ipp.status.StatusMessage;
 import org.ulyssis.ipp.status.StatusReporter;
 import org.ulyssis.ipp.utils.JedisHelper;
 import org.ulyssis.ipp.utils.Serialization;
 import org.ulyssis.ipp.TagId;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.Response;
-import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
+import java.sql.*;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -85,112 +76,136 @@ import java.util.function.Consumer;
 public final class Processor implements Runnable {
     private static final Logger LOG = LogManager.getLogger(Processor.class);
 
-    private final URI jedisUri;
-    private final ProcessorOptions options;
-    private final Jedis jedis;
     private final BlockingQueue<Event> eventQueue;
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+
     private final ConcurrentMap<Event, Consumer<Boolean> > eventCallbacks;
+
     private final StatusReporter statusReporter;
     private final CommandProcessor commandProcessor;
     private final List<Consumer<Processor>> onStartedCallbacks;
 
-    private final List<ReaderListener> listeners;
+    /**
+     * The listeners responsible for fetching results from all registered readers
+     */
+    private final List<ReaderListener> readerListeners;
+
     private final List<Thread> threads;
 
-    private final List<Event> events;
-    private final ArrayList<Snapshot> snapshots;
-
-    private final Map<Integer,Long> lastUpdateMap = new HashMap<>();
-    private final Map<Integer,Instant> lastUpdateInstantMap = new HashMap<>();
+    private Snapshot snapshot;
 
     public Processor(final ProcessorOptions options) {
         URI uri = options.getRedisUri();
-        this.options = options;
-        this.jedisUri = uri;
-        this.jedis = JedisHelper.get(uri);
         this.eventQueue = new LinkedBlockingQueue<>();
         this.eventCallbacks  = new ConcurrentHashMap<>();
-        this.events = new ArrayList<>();
-        this.snapshots = new ArrayList<>();
         this.onStartedCallbacks = new CopyOnWriteArrayList<>();
-        this.listeners = new ArrayList<>();
+        this.readerListeners = new ArrayList<>();
         this.threads = new ArrayList<>();
+        // TODO: Move status reporting and processing of commands to ZeroMQ?
+        // Also: post some stuff to a log in the db?
         this.statusReporter = new StatusReporter(uri, Config.getCurrentConfig().getStatusChannel());
         this.commandProcessor = new CommandProcessor(uri, Config.getCurrentConfig().getControlChannel(), statusReporter);
         initCommandProcessor();
-        Snapshot snapshot = Snapshot.builder(Instant.MIN).build();
-        this.snapshots.add(snapshot);
-        if (!restoreFromRedis()) {
+        snapshot = Snapshot.builder(Instant.MIN).build();
+        if (!restoreFromDb()) {
             registerInitialTags();
         }
     }
 
+    // TODO(Roel): refactor these create connection functions!
+    private Connection createReadOnlyConnection() throws SQLException {
+        // TODO(Roel): Make all of this configurable!
+        String url = "jdbc:postgresql://ipptest.local/ipp";
+        Properties props = new Properties();
+        props.setProperty("user", "ipp");
+        props.setProperty("password", "ipp");
+        props.setProperty("readOnly", "true");
+        Connection connection = DriverManager.getConnection(url, props);
+        connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+        connection.setAutoCommit(false);
+        return connection;
+    }
+
+    private Connection createReadWriteConnection() throws SQLException {
+        // TODO(Roel): Make all of this configurable!
+        String url = "jdbc:postgresql://ipptest.local/ipp";
+        Properties props = new Properties();
+        props.setProperty("user", "ipp");
+        props.setProperty("password", "ipp");
+        props.setProperty("readOnly", "false");
+        Connection connection = DriverManager.getConnection(url, props);
+        connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+        connection.setAutoCommit(false);
+        return connection;
+    }
+
     /**
-     * Restore the state from Redis
+     * Restore the state from the database
      *
-     * @return Whether the state has been restored from Redis.
+     * @return Whether we could restore from db, if false, we're starting from a clean slate
      */
-    private boolean restoreFromRedis() {
+    private boolean restoreFromDb() {
+        Connection connection = null;
+        Snapshot oldSnapshot = this.snapshot;
         try {
-            Instant now = Instant.now();
-            Jedis remoteJedis = jedis;
-            if (options.getClone() != null) {
-                remoteJedis = JedisHelper.get(options.getClone());
-            }
-            Response<Set<byte[]>> redisEvents;
-            Response<List<byte[]>> redisSnapshots;
-            {
-                Transaction t = remoteJedis.multi();
-                redisEvents = t.zrange("events".getBytes(StandardCharsets.UTF_8), 0, -1);
-                redisSnapshots = t.lrange("snapshots".getBytes(), 0L, -1L);
-                t.exec();
-            }
-            List<Event> eventsToSave = new ArrayList<>();
-            for (byte[] eventBytes : redisEvents.get()) {
-                Event event = Serialization.getJsonMapper().readValue(eventBytes, Event.class);
-                eventsToSave.add(event);
-                if (event.getTime().isBefore(now)) {
-                    events.add(event);
-                } else {
-                    executorService.schedule(() -> processEvent(event), Duration.between(now, event.getTime()).toMillis(), TimeUnit.MILLISECONDS);
-                }
-            }
-            for (byte[] snapshotBytes : redisSnapshots.get()) {
-                Snapshot snapshot = Serialization.getJsonMapper().readValue(snapshotBytes, Snapshot.class);
-                snapshots.add(snapshot);
-            }
-            if (jedis != remoteJedis) {
-                Transaction t = jedis.multi();
-                for (Event e : eventsToSave) {
-                    saveEvent(e, t);
-                }
-                saveSnapshotsFrom(1, t);
-                saveLatestSnapshot(t);
-                t.exec();
-            }
-            for (int i = 0; i < events.size(); ++i) {
-                Event event = events.get(i);
-                if (event instanceof TagSeenEvent) {
-                    if (lastUpdateMap.containsKey(((TagSeenEvent) event).getReaderId())) {
-                        if (!lastUpdateInstantMap.get(((TagSeenEvent) event).getReaderId()).equals(event.getTime())) {
-                            lastUpdateMap.put(((TagSeenEvent) event).getReaderId(),lastUpdateMap.get(((TagSeenEvent) event).getReaderId()) + 1L);
-                            lastUpdateInstantMap.put(((TagSeenEvent) event).getReaderId(),event.getTime());
-                        }
-                    } else {
-                        lastUpdateMap.put(((TagSeenEvent) event).getReaderId(), 0L);
-                        lastUpdateInstantMap.put(((TagSeenEvent) event).getReaderId(),event.getTime());
+            connection = createReadWriteConnection();
+            Optional<Snapshot> snapshot = Snapshot.loadLatest(connection);
+            if (snapshot.isPresent()) {
+                this.snapshot = snapshot.get();
+                connection.commit();
+                return true;
+            } else {
+                List<Event> events = Event.loadAll(connection);
+                Snapshot snapshotBefore = this.snapshot;
+                // Instant now = Instant.now(); // TODO: Handle future events later!
+                for (Event event : events) {
+                    if (!event.isRemoved()/* && event.getTime().isBefore(now)*/) { // TODO: Future events later!
+                        this.snapshot = event.apply(this.snapshot);
+                        this.snapshot.save(connection);
                     }
                 }
+                connection.commit();
+                return !Objects.equals(this.snapshot, snapshotBefore);
             }
-        } catch (JedisConnectionException | IOException e) {
-            LOG.error("Couldn't restore from Redis", e);
-            events.clear();
-            snapshots.clear();
-            snapshots.add(Snapshot.builder(Instant.MIN).build());
+        } catch (SQLException | IOException e) {
+            // TODO(Roel): ERROR!
+            this.snapshot = oldSnapshot;
+            try {
+                if (connection != null) {
+                    connection.rollback();
+                }
+            } catch (SQLException e2) {
+                // TODO(Roel): ERROR!
+            }
             return false;
         }
-        return !events.isEmpty();
+    }
+
+    private void registerInitialTags() {
+        Snapshot oldSnapshot = this.snapshot;
+        Connection connection = null;
+        try {
+            connection = createReadWriteConnection();
+            for (Team team : Config.getCurrentConfig().getTeams()) {
+                for (TagId tag : team.getTags()) {
+                    AddTagEvent e = new AddTagEvent(Instant.MIN, tag, team.getTeamNb());
+                    e.save(connection);
+                    this.snapshot = e.apply(this.snapshot);
+                    this.snapshot.save(connection);
+                }
+            }
+            connection.commit();
+        } catch (SQLException e) {
+            // TODO(Roel): ERROR!
+            this.snapshot = oldSnapshot;
+            try {
+                if (connection != null) {
+                    connection.rollback();
+                }
+            } catch (SQLException e2) {
+                // TODO(Roel): ERROR!
+            }
+        }
     }
 
     private void initCommandProcessor() {
@@ -211,14 +226,6 @@ public final class Processor implements Runnable {
                 new EventCommandHandler<>(SetStatusMessageCommand.class, MessageEvent::fromCommand, this::queueEvent));
         commandProcessor.addHandler(
                 new EventCommandHandler<>(SetUpdateFrequencyCommand.class, UpdateFrequencyChangeEvent::fromCommand, this::queueEvent));
-    }
-
-    private void registerInitialTags() {
-        for (Team team : Config.getCurrentConfig().getTeams()) {
-            for (TagId tag : team.getTags()) {
-                eventQueue.add(new AddTagEvent(Instant.MIN, tag, team.getTeamNb()));
-            }
-        }
     }
 
     public void addOnStartedCallback(Consumer<Processor> onStarted) {
@@ -247,20 +254,15 @@ public final class Processor implements Runnable {
         try {
             while (!Thread.currentThread().isInterrupted()) {
                 Event event = eventQueue.take();
-                Instant now = Instant.now();
-                executorService.submit(() -> saveEvent(event));
-                if (event.getTime().isBefore(now)) {
-                    executorService.submit(() -> processEvent(event));
-                } else {
-                    executorService.schedule(() -> processEvent(event), Duration.between(now, event.getTime()).toMillis(), TimeUnit.MILLISECONDS);
-                }
+                processEvent(event);
+                // TODO(Roel): Do deferred event processing later!
             }
         } catch (InterruptedException ignored) {
         }
         LOG.info("Stopping processor!");
         executorService.shutdownNow();
         commandProcessor.stop();
-        listeners.stream().forEach(listener -> {
+        readerListeners.stream().forEach(listener -> {
             try {
                 listener.unsubscribe();
             } catch (JedisConnectionException ignored) {
@@ -276,18 +278,39 @@ public final class Processor implements Runnable {
         LOG.info("Bye bye!");
     }
 
+    private Optional<Long> getLastUpdateForReader(Connection connection, int readerId) throws SQLException {
+        String statement = "SELECT \"lastUpdate\" FROM \"tagSeenEvents\" WHERE \"readerId\" = ? " +
+                "ORDER BY \"lastUpdate\" DESC FETCH FIRST ROW ONLY";
+        try (PreparedStatement stmt = connection.prepareStatement(statement)) {
+            stmt.setInt(1, readerId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return Optional.of(rs.getLong("lastUpdate"));
+            } else {
+                return Optional.empty();
+            }
+        }
+    }
+
     private void trySpawnReaderListener(int readerId) {
         URI uri = Config.getCurrentConfig().getReader(readerId).getURI();
         String updateChannel = JedisHelper.dbLocalChannel(Config.getCurrentConfig().getUpdateChannel(), uri);
         try {
-            Jedis subJedis = JedisHelper.get(uri);
-            ReaderListener listener;
-            if (lastUpdateMap.containsKey(readerId)) {
-                listener = new ReaderListener(readerId, this::queueEvent, lastUpdateMap.get(readerId));
-            } else {
-                listener = new ReaderListener(readerId, this::queueEvent, -1);
+            Optional<Long> lastUpdate;
+            {
+                Connection connection = null;
+                try {
+                    connection = createReadOnlyConnection();
+                    lastUpdate = getLastUpdateForReader(connection, readerId);
+                    connection.commit();
+                } catch (SQLException e) {
+                    if (connection != null) connection.rollback();
+                    throw e;
+                }
             }
-            listeners.add(listener);
+            Jedis subJedis = JedisHelper.get(uri);
+            ReaderListener listener = new ReaderListener(readerId, this::queueEvent, lastUpdate);
+            readerListeners.add(listener);
             Thread thread = new Thread(() -> {
                 try {
                     LOG.info("Reader listener {} subscribing to channel {} on uri {}", readerId, updateChannel, uri);
@@ -300,7 +323,9 @@ public final class Processor implements Runnable {
             });
             threads.add(thread);
             thread.start();
-            // TODO: What if this thread exits because of no connection?
+        } catch (SQLException e) {
+            LOG.error("Error fetching last update for reader {} from database, scheduling retry", readerId, e);
+            executorService.schedule(() -> trySpawnReaderListener(readerId), 5L, TimeUnit.SECONDS);
         } catch (JedisConnectionException e) {
             LOG.error("Couldn't connect to reader {}, uri {}, scheduling reconnect", readerId, uri, e);
             executorService.schedule(() -> trySpawnReaderListener(readerId), 5L, TimeUnit.SECONDS);
@@ -313,56 +338,54 @@ public final class Processor implements Runnable {
 
     private void processEvent(Event event) {
         logProcessEvent(event);
-        int oldIndex = Integer.MAX_VALUE;
-        if (event.unique()) {
-            for (int i = 0; i < events.size(); ++i) {
-                if (events.get(i).getClass() == event.getClass()) {
-                    Event oldEvent = events.get(i);
-                    Event idEvent = new IdentityEvent(events.get(i).getTime());
-                    events.set(i, idEvent);
-                    oldIndex = Integer.min(i, oldIndex);
-                    Transaction t = jedis.multi();
-                    try {
-                        byte[] oldEventBytes = Serialization.getJsonMapper().writeValueAsBytes(oldEvent);
-                        byte[] idEventBytes = Serialization.getJsonMapper().writeValueAsBytes(idEvent);
-                        t.zrem("events".getBytes(StandardCharsets.UTF_8), oldEventBytes);
-                        t.zadd("events".getBytes(StandardCharsets.UTF_8), idEvent.getTime().toEpochMilli(), idEventBytes);
-                        t.exec();
-                    } catch (JsonProcessingException e) {
-                        LOG.fatal("Couldn't replace event with identity event!", e);
+        Connection connection = null;
+        Snapshot oldSnapshot = this.snapshot;
+        try {
+            connection = createReadWriteConnection();
+            Event firstEvent = event;
+            if (event.isUnique()) {
+                Optional<Event> other = Event.loadUnique(connection, event.getClass());
+                if (other.isPresent()) {
+                    other.get().setRemoved(connection, true);
+                    if (!other.get().getTime().isAfter(event.getTime())) {
+                        firstEvent = other.get();
                     }
                 }
             }
-        }
-        int i = events.size() - 1;
-        for (; i >= 0; i--) {
-            if (events.get(i).getTime().equals(event.getTime()) || events.get(i).getTime().isBefore(event.getTime())) {
-                break;
+            event.save(connection);
+            Snapshot snapshotToUpdateFrom = this.snapshot;
+            if (!firstEvent.getTime().isAfter(this.snapshot.getSnapshotTime())) {
+                Optional<Snapshot> s = Snapshot.loadBefore(connection, firstEvent.getTime());
+                if (s.isPresent()) snapshotToUpdateFrom = s.get();
             }
-        }
-        if (i >= 0 && events.get(i).equals(event)) {
-            LOG.error("Something went terribly wrong! Two events are the same?");
-        }
-        i++;
-        events.add(i, event);
-        i = Integer.min(i, oldIndex);
-        int j = recalculateSnapshotsFrom(i);
-        Transaction t = jedis.multi();
-        boolean result = saveSnapshotsFrom(j, t);
-        if (result)
-            result = saveLatestSnapshot(t);
-        if (result) {
-            t.exec();
-        } else {
-            LOG.error("Something went wrong when saving events and snapshots to Redis, transaction not executed.");
-            t.discard();
-        }
-        // TODO: Provide a sensible message for NEW_SNAPSHOT?
-        statusReporter.broadcast(new StatusMessage(StatusMessage.MessageType.NEW_SNAPSHOT,
-                String.valueOf(snapshots.size())));
-        if (eventCallbacks.containsKey(event)) {
-            eventCallbacks.get(event).accept(true);
-            eventCallbacks.remove(event);
+            List<Event> events;
+            if (snapshotToUpdateFrom.getId().isPresent()) {
+                assert snapshotToUpdateFrom.getEventId().isPresent();
+                Snapshot.deleteAfter(connection, snapshotToUpdateFrom);
+                events = Event.loadFrom(connection, snapshotToUpdateFrom.getSnapshotTime(), snapshotToUpdateFrom.getEventId().get());
+            } else {
+                events = Event.loadAll(connection);
+            }
+            for (Event e : events) {
+                snapshotToUpdateFrom = e.apply(snapshotToUpdateFrom);
+                snapshotToUpdateFrom.save(connection);
+            }
+            this.snapshot = snapshotToUpdateFrom;
+            connection.commit();
+            // TODO: Provide a sensible message for NEW_SNAPSHOT?
+            statusReporter.broadcast(new StatusMessage(StatusMessage.MessageType.NEW_SNAPSHOT, "New snapshot!"));
+            if (eventCallbacks.containsKey(event)) {
+                eventCallbacks.get(event).accept(true);
+                eventCallbacks.remove(event);
+            }
+        } catch (SQLException | IOException e) {
+            this.snapshot = oldSnapshot;
+            try {
+                if (connection != null) connection.rollback();
+            } catch (SQLException e2) {
+                // TODO(Roel): Error!
+            }
+            // TODO(Roel): Reschedule event!
         }
     }
 
@@ -374,83 +397,6 @@ public final class Processor implements Runnable {
             } catch (JsonProcessingException ignored) {
             }
         }
-    }
-
-    // NOTE: Returns first snapshot, for use in saveSnapshotsFrom
-    private int recalculateSnapshotsFrom(int firstEvent) {
-        int firstSnapshot = snapshots.size() + 1 - (events.size() - firstEvent);
-        if (firstSnapshot <= 0) {
-            firstEvent = firstEvent - firstSnapshot + 1;
-            firstSnapshot = 1;
-        }
-        for (int i = firstEvent, j = firstSnapshot; i < events.size(); i++, j++) {
-            Snapshot previousSnapshot = snapshots.get(j - 1);
-            Snapshot newSnapshot = events.get(i).apply(previousSnapshot);
-            if (j < snapshots.size()) {
-                snapshots.set(j, newSnapshot);
-            } else {
-                snapshots.add(newSnapshot);
-            }
-        }
-        return firstSnapshot;
-    }
-
-    private void saveEvent(Event e) {
-        Transaction t = jedis.multi();
-        if (e.unique()) {
-            // TODO: We need to already remove the old event!!!!!!!!!
-        }
-        if (saveEvent(e, t)) {
-            t.exec();
-        } else {
-            t.discard();
-        }
-    }
-
-    private boolean saveEvent(Event e, Transaction t) {
-        try {
-            byte[] eventBytes = Serialization.getJsonMapper().writeValueAsBytes(e);
-            t.zadd("events".getBytes(StandardCharsets.UTF_8), e.getTime().toEpochMilli(), eventBytes);
-        } catch (JsonProcessingException exc) {
-            LOG.error("Error serializing event", exc);
-            t.discard();
-            return false;
-        }
-        return true;
-    }
-
-    private boolean saveSnapshotsFrom(int j, Transaction t) {
-        j = j < 1 ? 1 : j;
-        if (j == 1) {
-            t.del("snapshots");
-        } else {
-            t.ltrim("snapshots", 0, j - 2);
-        }
-        for (; j < snapshots.size(); ++j) {
-            try {
-                byte[] snapshotBytes = Serialization.getJsonMapper().writeValueAsBytes(snapshots.get(j));
-                t.rpush("snapshots".getBytes(), snapshotBytes);
-            } catch (JsonProcessingException e) {
-                LOG.error("Error serializing snapshot", e);
-                t.discard();
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean saveLatestSnapshot(Transaction t) {
-        try {
-            byte[] snapshot = Serialization.getJsonMapper().writeValueAsBytes(snapshots.get(snapshots.size() - 1));
-            t.set("snapshot".getBytes(StandardCharsets.UTF_8), snapshot);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Saving snapshot: {}", new String(snapshot));
-            }
-        } catch (JsonProcessingException e) {
-            LOG.error("Error serializing latest snapshot", e);
-            return false;
-        }
-        return true;
     }
 
     /**

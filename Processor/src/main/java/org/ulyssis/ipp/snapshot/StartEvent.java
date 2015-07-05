@@ -15,12 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
-package org.ulyssis.ipp.snapshot.events;
+package org.ulyssis.ipp.snapshot;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.ulyssis.ipp.control.commands.Command;
 import org.ulyssis.ipp.control.commands.SetStartTimeCommand;
-import org.ulyssis.ipp.snapshot.Snapshot;
 
 import java.time.Instant;
 
@@ -37,7 +36,8 @@ public final class StartEvent extends Event {
         super(time);
     }
 
-    public Snapshot apply(Snapshot snapshot) {
+    @Override
+    protected Snapshot doApply(Snapshot snapshot) {
         return Snapshot.builder(getTime()).fromSnapshot(snapshot).withStartTime(getTime()).build();
     }
 
@@ -48,7 +48,7 @@ public final class StartEvent extends Event {
     }
 
     @Override
-    public boolean unique() {
+    public boolean isUnique() {
         return true;
     }
 }

@@ -18,7 +18,6 @@
 package org.ulyssis.ipp.snapshot;
 
 import org.junit.Test;
-import org.ulyssis.ipp.snapshot.events.TagSeenEvent;
 import org.ulyssis.ipp.utils.Serialization;
 
 import java.util.Optional;

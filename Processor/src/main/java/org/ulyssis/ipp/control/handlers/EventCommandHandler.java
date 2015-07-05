@@ -19,7 +19,7 @@ package org.ulyssis.ipp.control.handlers;
 
 import org.ulyssis.ipp.control.CommandHandler;
 import org.ulyssis.ipp.control.commands.Command;
-import org.ulyssis.ipp.snapshot.events.Event;
+import org.ulyssis.ipp.snapshot.Event;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;

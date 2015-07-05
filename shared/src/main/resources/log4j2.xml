@@ -15,7 +15,7 @@
         <Logger name="eu.webtoolkit" level="info">
           <AppenderRef ref="STDERR" />
         </Logger>
-        <Root level="debug">
+        <Root level="info">
             <AppenderRef ref="STDERR" />
         </Root>
     </Loggers>

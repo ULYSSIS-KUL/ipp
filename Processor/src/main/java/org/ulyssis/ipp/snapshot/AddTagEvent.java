@@ -15,37 +15,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
-package org.ulyssis.ipp.snapshot.events;
+package org.ulyssis.ipp.snapshot;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.ulyssis.ipp.control.commands.AddTagCommand;
 import org.ulyssis.ipp.control.commands.Command;
-import org.ulyssis.ipp.control.commands.RemoveTagCommand;
-import org.ulyssis.ipp.snapshot.Snapshot;
-import org.ulyssis.ipp.snapshot.TeamTagMap;
 import org.ulyssis.ipp.TagId;
 
 import java.time.Instant;
 
-@JsonTypeName("RemoveTag")
-public final class RemoveTagEvent extends TagEvent {
+@JsonTypeName("AddTag")
+public final class AddTagEvent extends TagEvent {
     @JsonCreator
-    public RemoveTagEvent(
+    public AddTagEvent(
             @JsonProperty("time") Instant time,
             @JsonProperty("tag") TagId tag,
             @JsonProperty("teamNb") int teamNb) {
         super(time, tag, teamNb);
     }
 
-    public Snapshot apply(Snapshot snapshot) {
-        TeamTagMap newTeamTagMap = snapshot.getTeamTagMap().removeTag(getTag());
+    protected Snapshot doApply(Snapshot snapshot) {
+        TeamTagMap newTeamTagMap = snapshot.getTeamTagMap().addTagToTeam(getTag(), getTeamNb());
         return Snapshot.builder(getTime()).fromSnapshot(snapshot).withTeamTagMap(newTeamTagMap).build();
     }
 
-    public static RemoveTagEvent fromCommand(Command command) {
-        assert(command instanceof RemoveTagCommand);
-        RemoveTagCommand cmd = (RemoveTagCommand) command;
-        return new RemoveTagEvent(cmd.getTime(), cmd.getTag(), cmd.getTeamNb());
+    public static AddTagEvent fromCommand(Command command) {
+        assert(command instanceof AddTagCommand);
+        AddTagCommand addTagCommand = (AddTagCommand) command;
+        return new AddTagEvent(
+            addTagCommand.getTime(),
+            addTagCommand.getTag(),
+            addTagCommand.getTeamNb()
+        );
     }
 }

@@ -17,9 +17,15 @@
  */
 package org.ulyssis.ipp.snapshot;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.ulyssis.ipp.updates.Status;
+import org.ulyssis.ipp.utils.Serialization;
 
+import java.io.IOException;
+import java.sql.*;
 import java.time.Instant;
+import java.util.Optional;
 
 public final class Snapshot {
     public static class Builder {
@@ -87,6 +93,22 @@ public final class Snapshot {
         }
     }
 
+    @JsonIgnore
+    private long id = -1;
+
+    @JsonIgnore
+    long eventId = -1;
+
+    public Optional<Long> getId() {
+        if (id != -1) return Optional.of(id);
+        else return Optional.empty();
+    }
+
+    public Optional<Long> getEventId() {
+        if (eventId != -1) return Optional.of(eventId);
+        else return Optional.empty();
+    }
+
     private Snapshot() {
     }
 
@@ -142,5 +164,75 @@ public final class Snapshot {
 
     public static Builder builder(Instant time) {
         return new Builder(time);
+    }
+
+    public static Optional<Snapshot> loadLatest(Connection connection) throws SQLException, IOException {
+        String statement = "SELECT \"id\", \"data\", \"event\" FROM \"snapshots\" ORDER BY \"time\" DESC FETCH FIRST ROW ONLY";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(statement)) {
+            if (rs.next()) {
+                String data = rs.getString("data");
+                Snapshot result = Serialization.getJsonMapper().readValue(data, Snapshot.class);
+                result.id = rs.getLong("id");
+                result.eventId = rs.getLong("event");
+                return Optional.of(result);
+            } else {
+                return Optional.empty();
+            }
+        }
+    }
+
+    public static Optional<Snapshot> loadBefore(Connection connection, Instant time) throws SQLException, IOException {
+        String statement = "SELECT \"id\", \"data\", \"event\" FROM \"snapshots\" " +
+                "WHERE \"time\" < ? ORDER BY \"time\" DESC, \"event\" DESC FETCH FIRST ROW ONLY";
+        try (PreparedStatement stmt = connection.prepareStatement(statement)) {
+            stmt.setTimestamp(1, Timestamp.from(time));
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                String data = rs.getString("data");
+                Snapshot result = Serialization.getJsonMapper().readValue(data, Snapshot.class);
+                result.id = rs.getLong("id");
+                result.eventId = rs.getLong("event");
+                return Optional.of(result);
+            } else {
+                return Optional.empty();
+            }
+        }
+    }
+
+    public void save(Connection connection) throws SQLException {
+        if (id != -1) return;
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO \"snapshots\" (\"time\",\"data\",\"event\") VALUES (?,?,?)")) {
+            statement.setTimestamp(1, Timestamp.from(snapshotTime));
+            String serialized;
+            try {
+                serialized = Serialization.getJsonMapper().writeValueAsString(this);
+            } catch (JsonProcessingException e) {
+                assert false; // TODO(Roel): Programming error
+                return;
+            }
+            statement.setString(2, serialized);
+            statement.setLong(3, eventId);
+            statement.executeUpdate();
+            ResultSet keys = statement.getGeneratedKeys();
+            keys.next();
+            this.id = keys.getLong(1);
+        }
+    }
+
+    public static void deleteAfter(Connection connection, Snapshot snapshot) throws SQLException {
+        assert snapshot.getId().isPresent();
+        assert snapshot.getEventId().isPresent();
+        String statement =
+                "DELETE FROM \"snapshots\" WHERE \"time\" > ? OR (\"time\" = ? AND \"event\" > ?)";
+        try (PreparedStatement stmt = connection.prepareStatement(statement)) {
+            Timestamp timestamp = Timestamp.from(snapshot.getSnapshotTime());
+            stmt.setTimestamp(1, timestamp);
+            stmt.setTimestamp(2, timestamp);
+            stmt.setLong(3, snapshot.getEventId().get());
+            boolean result = stmt.execute();
+            assert !result;
+        }
     }
 }

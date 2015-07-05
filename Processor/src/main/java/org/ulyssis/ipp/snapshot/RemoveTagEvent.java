@@ -15,37 +15,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
-package org.ulyssis.ipp.snapshot.events;
+package org.ulyssis.ipp.snapshot;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.ulyssis.ipp.control.commands.Command;
-import org.ulyssis.ipp.control.commands.SetStatusMessageCommand;
-import org.ulyssis.ipp.snapshot.Snapshot;
+import org.ulyssis.ipp.control.commands.RemoveTagCommand;
+import org.ulyssis.ipp.TagId;
 
 import java.time.Instant;
 
-@JsonTypeName("Message")
-public final class MessageEvent extends Event {
-    private final String message;
-
+@JsonTypeName("RemoveTag")
+public final class RemoveTagEvent extends TagEvent {
     @JsonCreator
-    public MessageEvent(
+    public RemoveTagEvent(
             @JsonProperty("time") Instant time,
-            @JsonProperty("message") String message) {
-        super(time);
-        this.message = message;
+            @JsonProperty("tag") TagId tag,
+            @JsonProperty("teamNb") int teamNb) {
+        super(time, tag, teamNb);
     }
 
     @Override
-    public Snapshot apply(Snapshot before) {
-        return Snapshot.builder(getTime()).fromSnapshot(before).withStatusMessage(message).build();
+    protected Snapshot doApply(Snapshot snapshot) {
+        TeamTagMap newTeamTagMap = snapshot.getTeamTagMap().removeTag(getTag());
+        return Snapshot.builder(getTime()).fromSnapshot(snapshot).withTeamTagMap(newTeamTagMap).build();
     }
 
-    public static MessageEvent fromCommand(Command command) {
-        assert(command instanceof SetStatusMessageCommand);
-        SetStatusMessageCommand cmd = (SetStatusMessageCommand) command;
-        return new MessageEvent(cmd.getTime(), cmd.getMessage());
+    public static RemoveTagEvent fromCommand(Command command) {
+        assert(command instanceof RemoveTagCommand);
+        RemoveTagCommand cmd = (RemoveTagCommand) command;
+        return new RemoveTagEvent(cmd.getTime(), cmd.getTag(), cmd.getTeamNb());
     }
 }

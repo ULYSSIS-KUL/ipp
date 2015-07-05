@@ -25,6 +25,7 @@ import org.ulyssis.ipp.utils.Serialization;
 import java.io.IOException;
 import java.sql.*;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Optional;
 
 public final class Snapshot {
@@ -203,7 +204,7 @@ public final class Snapshot {
     public void save(Connection connection) throws SQLException {
         if (id != -1) return;
         try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO \"snapshots\" (\"time\",\"data\",\"event\") VALUES (?,?,?)")) {
+                "INSERT INTO \"snapshots\" (\"time\",\"data\",\"event\") VALUES (?,?,?)", Statement.RETURN_GENERATED_KEYS)) {
             statement.setTimestamp(1, Timestamp.from(snapshotTime));
             String serialized;
             try {
@@ -222,15 +223,13 @@ public final class Snapshot {
     }
 
     public static void deleteAfter(Connection connection, Snapshot snapshot) throws SQLException {
-        assert snapshot.getId().isPresent();
-        assert snapshot.getEventId().isPresent();
         String statement =
                 "DELETE FROM \"snapshots\" WHERE \"time\" > ? OR (\"time\" = ? AND \"event\" > ?)";
         try (PreparedStatement stmt = connection.prepareStatement(statement)) {
             Timestamp timestamp = Timestamp.from(snapshot.getSnapshotTime());
             stmt.setTimestamp(1, timestamp);
             stmt.setTimestamp(2, timestamp);
-            stmt.setLong(3, snapshot.getEventId().get());
+            stmt.setLong(3, snapshot.getEventId().orElse(-1L));
             boolean result = stmt.execute();
             assert !result;
         }

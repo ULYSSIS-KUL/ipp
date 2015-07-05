@@ -31,6 +31,8 @@ import org.ulyssis.ipp.control.commands.SetEndTimeCommand;
 import org.ulyssis.ipp.control.commands.SetStartTimeCommand;
 import org.ulyssis.ipp.processor.Processor;
 import org.ulyssis.ipp.processor.ProcessorOptions;
+import org.ulyssis.ipp.snapshot.Event;
+import org.ulyssis.ipp.snapshot.Snapshot;
 import org.ulyssis.ipp.status.StatusMessage;
 import org.ulyssis.ipp.updates.TagUpdate;
 import org.ulyssis.ipp.utils.JedisHelper;
@@ -39,6 +41,7 @@ import org.ulyssis.ipp.TagId;
 import redis.clients.jedis.BinaryJedisPubSub;
 import redis.clients.jedis.Jedis;
 
+import javax.swing.text.html.Option;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -46,14 +49,18 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Properties;
 import java.util.concurrent.Semaphore;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static uk.co.datumedge.hamcrest.json.SameJSONAs.sameJSONAs;
 
 public class TestWithRedis {
@@ -164,6 +171,54 @@ public class TestWithRedis {
         jedis.flushAll();
     }
 
+    @Before
+    @After
+    public void clearDb() throws Exception {
+        String url = "jdbc:postgresql://ipptest.local/ipp"; // TODO: Make URL configurable
+        Properties props = new Properties();
+        props.setProperty("user", "ipp");
+        props.setProperty("password", "ipp");
+        props.setProperty("readOnly", "false");
+        Connection connection = null;
+        try {
+            connection = DriverManager.getConnection(url, props);
+            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            connection.setAutoCommit(false);
+            // TODO: Actually recreate the tables!
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("DELETE FROM \"snapshots\"");
+            }
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("DELETE FROM \"tagSeenEvents\"");
+            }
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("DELETE FROM \"events\"");
+            }
+            connection.commit();
+        } catch (Exception e) {
+            if (connection != null) connection.rollback();
+            throw e;
+        }
+    }
+
+    public Connection createConnection() throws Exception {
+        String url = "jdbc:postgresql://ipptest.local/ipp"; // TODO: Make URL configurable
+        Properties props = new Properties();
+        props.setProperty("user", "ipp");
+        props.setProperty("password", "ipp");
+        props.setProperty("readOnly", "true");
+        Connection connection = null;
+        try {
+            connection = DriverManager.getConnection(url, props);
+            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            connection.setAutoCommit(false);
+            return connection;
+        } catch (Exception e) {
+            if (connection != null) connection.rollback();
+            throw e;
+        }
+    }
+
     @After
     public void stopRunningThreads() {
         runningThreads.stream().forEach(thread -> {
@@ -250,9 +305,15 @@ public class TestWithRedis {
         CommandDispatcher.Result result = dispatcher.send(
                 new AddTagCommand(new TagId("abcd"), 0));
         assertThat(result, equalTo(CommandDispatcher.Result.SUCCESS));
-        assertThat(jedis.get("snapshot"), sameJSONAs("{teamTagMap:{0:[\"abcd\"]}}").allowingExtraUnexpectedFields());
-        assertThat(jedis.llen("snapshots"), equalTo(1L));
-        assertThat(jedis.rpop("snapshots"), sameJSONAs("{teamTagMap:{0:[\"abcd\"]}}").allowingExtraUnexpectedFields());
+        Connection connection = createConnection();
+        Optional<Snapshot> snapshot = Snapshot.loadLatest(connection);
+        assertThat(snapshot.isPresent(), equalTo(true));
+        assertThat(snapshot.get().getTeamTagMap().tagToTeam("abcd").get(), equalTo(0));
+        try (Statement statement = connection.createStatement()) {
+            ResultSet rs = statement.executeQuery("SELECT count(*) FROM \"snapshots\"");
+            rs.next();
+            assertThat(rs.getLong(1), equalTo(1L));
+        }
     }
 
     @Test
@@ -262,9 +323,15 @@ public class TestWithRedis {
         CommandDispatcher.Result result = dispatcher.send(
                 new SetStartTimeCommand(Instant.EPOCH));
         assertThat(result, equalTo(CommandDispatcher.Result.SUCCESS));
-        assertThat(jedis.get("snapshot"), sameJSONAs("{startTime:0}").allowingExtraUnexpectedFields());
-        assertThat(jedis.llen("snapshots"), equalTo(1L));
-        assertThat(jedis.rpop("snapshots"), sameJSONAs("{startTime:0}").allowingExtraUnexpectedFields());
+        Connection connection = createConnection();
+        Optional<Snapshot> latestSnapshot = Snapshot.loadLatest(connection);
+        assertThat(latestSnapshot.isPresent(), equalTo(true));
+        assertThat(latestSnapshot.get().getStartTime(), equalTo(Instant.EPOCH));
+        try (Statement stmt = connection.createStatement()) {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM \"snapshots\"");
+            rs.next();
+            assertThat(rs.getLong(1), equalTo(1L));
+        }
     }
 
     @Test
@@ -274,9 +341,15 @@ public class TestWithRedis {
         CommandDispatcher.Result result = dispatcher.send(
                 new SetEndTimeCommand(Instant.EPOCH));
         assertThat(result, equalTo(CommandDispatcher.Result.SUCCESS));
-        assertThat(jedis.get("snapshot"), sameJSONAs("{endTime:0}").allowingExtraUnexpectedFields());
-        assertThat(jedis.llen("snapshots"), equalTo(1L));
-        assertThat(jedis.rpop("snapshots"),sameJSONAs("{endTime:0}").allowingExtraUnexpectedFields());
+        Connection connection = createConnection();
+        Optional<Snapshot> latestSnapshot = Snapshot.loadLatest(connection);
+        assertThat(latestSnapshot.isPresent(), equalTo(true));
+        assertThat(latestSnapshot.get().getEndTime(), equalTo(Instant.EPOCH));
+        try (Statement stmt = connection.createStatement()) {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM \"snapshots\"");
+            rs.next();
+            assertThat(rs.getLong(1), equalTo(1L));
+        }
     }
 
     @Test
@@ -311,8 +384,12 @@ public class TestWithRedis {
         waitForSnapshot();
         readerJedis.close();
         assertThat(semaphore.availablePermits(), equalTo(0));
-        assertThat(jedis.get("snapshot"), sameJSONAs("{teamTagMap:{0:[\"abcd\"]},teamStates:{0:{tagFragmentCount:3}}}")
-            .allowingExtraUnexpectedFields());
+        Connection connection = createConnection();
+        Optional<Snapshot> snapshot = Snapshot.loadLatest(connection);
+        assertThat(snapshot.isPresent(), equalTo(true));
+        assertThat(snapshot.get().getTeamTagMap().tagToTeam("abcd").get(), equalTo(0));
+        assertThat(snapshot.get().getTeamStates().getStateForTeam(0).get().getTagFragmentCount(), equalTo(3));
+        assertThat(snapshot.get().getTeamStates().getNbLapsForTeam(0), equalTo(1));
     }
 
     @Test
@@ -324,15 +401,21 @@ public class TestWithRedis {
         dispatcher.send(new SetStartTimeCommand(Instant.EPOCH.plus(20, ChronoUnit.SECONDS)));
         waitForSnapshot();
         Jedis jedis = JedisHelper.get(new URI("redis://127.0.0.1:12345/0"));
-        assertThat(jedis.llen("snapshots"), equalTo(2L));
-        assertThat(jedis.zcard("events"), equalTo(2L));
-        List<String> events = new ArrayList<>(jedis.zrange("events", 0L, -1L));
-        assertThat(events.get(0), sameJSONAs("{type:Identity}")
-                .allowingExtraUnexpectedFields());
-        assertThat(events.get(1), sameJSONAs("{type:Start}")
-                .allowingExtraUnexpectedFields());
-        assertThat(jedis.llen("snapshots"), equalTo(2L));
-        assertThat(jedis.lindex("snapshots", 1L), sameJSONAs("{startTime:20}")
-                .allowingExtraUnexpectedFields());
+        Connection connection = createConnection();
+        try (Statement stmt = connection.createStatement()) {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM \"snapshots\"");
+            rs.next();
+            assertThat(rs.getLong(1), equalTo(1L));
+        }
+        try (Statement stmt = connection.createStatement()) {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM \"events\"");
+            rs.next();
+            assertThat(rs.getLong(1), equalTo(2L));
+        }
+        List<Event> events = Event.loadAll(connection);
+        assertThat(events.get(0).isRemoved(), equalTo(true));
+        Optional<Snapshot> snapshot = Snapshot.loadLatest(connection);
+        assertThat(snapshot.isPresent(), equalTo(true));
+        assertThat(snapshot.get().getStartTime(), equalTo(Instant.EPOCH.plus(20, ChronoUnit.SECONDS)));
     }
 }

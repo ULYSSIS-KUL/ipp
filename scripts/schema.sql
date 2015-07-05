@@ -1,6 +1,6 @@
-﻿DROP TABLE "snapshots" CASCADE;
-DROP TABLE "tagSeenEvents" CASCADE;
-DROP TABLE "events" CASCADE;
+﻿DROP TABLE IF EXISTS "snapshots" CASCADE;
+DROP TABLE IF EXISTS "tagSeenEvents" CASCADE;
+DROP TABLE IF EXISTS "events" CASCADE;
 
 CREATE TABLE "events" (
 	"id" bigserial PRIMARY KEY,
@@ -10,7 +10,7 @@ CREATE TABLE "events" (
 	"removed" boolean NOT NULL
 );
 
-CREATE INDEX ON "events" ("time" DESC, "id" DESC);
+CREATE UNIQUE INDEX ON "events" ("time" DESC, "id" DESC);
 CREATE INDEX ON "events" ("type", "removed");
 
 CREATE TABLE "tagSeenEvents" (

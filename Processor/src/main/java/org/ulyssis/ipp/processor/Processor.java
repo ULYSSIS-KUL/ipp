@@ -106,7 +106,7 @@ public final class Processor implements Runnable {
         this.statusReporter = new StatusReporter(uri, Config.getCurrentConfig().getStatusChannel());
         this.commandProcessor = new CommandProcessor(uri, Config.getCurrentConfig().getControlChannel(), statusReporter);
         initCommandProcessor();
-        snapshot = Snapshot.builder(Instant.MIN).build();
+        snapshot = Snapshot.builder(Instant.EPOCH).build();
         if (!restoreFromDb()) {
             registerInitialTags();
         }
@@ -168,14 +168,14 @@ public final class Processor implements Runnable {
                 return !Objects.equals(this.snapshot, snapshotBefore);
             }
         } catch (SQLException | IOException e) {
-            // TODO(Roel): ERROR!
+            LOG.error("An error occurred when restoring from database!", e);
             this.snapshot = oldSnapshot;
             try {
                 if (connection != null) {
                     connection.rollback();
                 }
             } catch (SQLException e2) {
-                // TODO(Roel): ERROR!
+                LOG.error("Error in rollback after previous error", e2);
             }
             return false;
         }
@@ -188,7 +188,7 @@ public final class Processor implements Runnable {
             connection = createReadWriteConnection();
             for (Team team : Config.getCurrentConfig().getTeams()) {
                 for (TagId tag : team.getTags()) {
-                    AddTagEvent e = new AddTagEvent(Instant.MIN, tag, team.getTeamNb());
+                    AddTagEvent e = new AddTagEvent(Instant.EPOCH, tag, team.getTeamNb());
                     e.save(connection);
                     this.snapshot = e.apply(this.snapshot);
                     this.snapshot.save(connection);
@@ -196,14 +196,14 @@ public final class Processor implements Runnable {
             }
             connection.commit();
         } catch (SQLException e) {
-            // TODO(Roel): ERROR!
+            LOG.error("An error occurred when registering initial tags!", e);
             this.snapshot = oldSnapshot;
             try {
                 if (connection != null) {
                     connection.rollback();
                 }
             } catch (SQLException e2) {
-                // TODO(Roel): ERROR!
+                LOG.error("Error in rollback after previous error", e2);
             }
         }
     }
@@ -279,13 +279,13 @@ public final class Processor implements Runnable {
     }
 
     private Optional<Long> getLastUpdateForReader(Connection connection, int readerId) throws SQLException {
-        String statement = "SELECT \"lastUpdate\" FROM \"tagSeenEvents\" WHERE \"readerId\" = ? " +
-                "ORDER BY \"lastUpdate\" DESC FETCH FIRST ROW ONLY";
+        String statement = "SELECT \"updateCount\" FROM \"tagSeenEvents\" WHERE \"readerId\" = ? " +
+                "ORDER BY \"updateCount\" DESC FETCH FIRST ROW ONLY";
         try (PreparedStatement stmt = connection.prepareStatement(statement)) {
             stmt.setInt(1, readerId);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                return Optional.of(rs.getLong("lastUpdate"));
+                return Optional.of(rs.getLong("updateCount"));
             } else {
                 return Optional.empty();
             }
@@ -357,18 +357,21 @@ public final class Processor implements Runnable {
             if (!firstEvent.getTime().isAfter(this.snapshot.getSnapshotTime())) {
                 Optional<Snapshot> s = Snapshot.loadBefore(connection, firstEvent.getTime());
                 if (s.isPresent()) snapshotToUpdateFrom = s.get();
+                else snapshotToUpdateFrom = Snapshot.builder(Instant.EPOCH).build();
             }
             List<Event> events;
+            Snapshot.deleteAfter(connection, snapshotToUpdateFrom);
             if (snapshotToUpdateFrom.getId().isPresent()) {
                 assert snapshotToUpdateFrom.getEventId().isPresent();
-                Snapshot.deleteAfter(connection, snapshotToUpdateFrom);
                 events = Event.loadFrom(connection, snapshotToUpdateFrom.getSnapshotTime(), snapshotToUpdateFrom.getEventId().get());
             } else {
                 events = Event.loadAll(connection);
             }
             for (Event e : events) {
-                snapshotToUpdateFrom = e.apply(snapshotToUpdateFrom);
-                snapshotToUpdateFrom.save(connection);
+                if (!e.isRemoved()) {
+                    snapshotToUpdateFrom = e.apply(snapshotToUpdateFrom);
+                    snapshotToUpdateFrom.save(connection);
+                }
             }
             this.snapshot = snapshotToUpdateFrom;
             connection.commit();
@@ -379,11 +382,12 @@ public final class Processor implements Runnable {
                 eventCallbacks.remove(event);
             }
         } catch (SQLException | IOException e) {
+            LOG.error("Error when handling event!", e);
             this.snapshot = oldSnapshot;
             try {
                 if (connection != null) connection.rollback();
             } catch (SQLException e2) {
-                // TODO(Roel): Error!
+                LOG.error("Error in rollback after previous error!", e2);
             }
             // TODO(Roel): Reschedule event!
         }

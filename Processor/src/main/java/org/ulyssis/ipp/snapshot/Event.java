@@ -28,6 +28,7 @@ import java.sql.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.PROPERTY, property="type")
@@ -73,6 +74,7 @@ public abstract class Event {
      *
      * @return whether this event should be isUnique (default implementation = false)
      */
+    @JsonIgnore
     public boolean isUnique() {
         return false;
     }
@@ -82,6 +84,7 @@ public abstract class Event {
      *
      * @return whether this event can be removed or undone (default implementation = isUnique())
      */
+    @JsonIgnore
     public boolean isRemovable() {
         return isUnique();
     }
@@ -92,6 +95,7 @@ public abstract class Event {
     protected abstract Snapshot doApply(Snapshot before);
 
     public final Snapshot apply(Snapshot before) {
+        assert !removed;
         Snapshot result = doApply(before);
         result.eventId = this.id;
         return result;
@@ -115,7 +119,7 @@ public abstract class Event {
     }
 
     public static Optional<Event> loadUnique(Connection connection, Class<? extends Event> eventType) throws SQLException, IOException {
-        String statement = "SELECT \"id\", \"data\", FROM \"events\" WHERE \"type\" = ? AND removed = false";
+        String statement = "SELECT \"id\", \"data\" FROM \"events\" WHERE \"type\" = ? AND removed = false";
         try (PreparedStatement stmt = connection.prepareStatement(statement)) {
             stmt.setString(1, eventType.getSimpleName());
             ResultSet result = stmt.executeQuery();
@@ -172,7 +176,7 @@ public abstract class Event {
         if (id != -1) return;
         try (PreparedStatement statement = connection.prepareStatement(
                     "INSERT INTO \"events\" (\"time\",\"type\",\"data\",\"removed\") " +
-                            "VALUES (?,?,?,?)")) {
+                            "VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS)) {
             statement.setTimestamp(1, Timestamp.from(time));
             String serialized;
             try {

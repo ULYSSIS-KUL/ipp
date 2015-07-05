@@ -67,6 +67,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import static org.ulyssis.ipp.processor.Database.ConnectionFlags.READ_ONLY;
+import static org.ulyssis.ipp.processor.Database.ConnectionFlags.READ_WRITE;
+
 /**
  * The processor, well, pulls and processes the updates that come in from the readers.
  *
@@ -112,33 +115,6 @@ public final class Processor implements Runnable {
         }
     }
 
-    // TODO(Roel): refactor these create connection functions!
-    private Connection createReadOnlyConnection() throws SQLException {
-        // TODO(Roel): Make all of this configurable!
-        String url = "jdbc:postgresql://ipptest.local/ipp";
-        Properties props = new Properties();
-        props.setProperty("user", "ipp");
-        props.setProperty("password", "ipp");
-        props.setProperty("readOnly", "true");
-        Connection connection = DriverManager.getConnection(url, props);
-        connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-        connection.setAutoCommit(false);
-        return connection;
-    }
-
-    private Connection createReadWriteConnection() throws SQLException {
-        // TODO(Roel): Make all of this configurable!
-        String url = "jdbc:postgresql://ipptest.local/ipp";
-        Properties props = new Properties();
-        props.setProperty("user", "ipp");
-        props.setProperty("password", "ipp");
-        props.setProperty("readOnly", "false");
-        Connection connection = DriverManager.getConnection(url, props);
-        connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-        connection.setAutoCommit(false);
-        return connection;
-    }
-
     /**
      * Restore the state from the database
      *
@@ -148,7 +124,7 @@ public final class Processor implements Runnable {
         Connection connection = null;
         Snapshot oldSnapshot = this.snapshot;
         try {
-            connection = createReadWriteConnection();
+            connection = Database.createConnection(EnumSet.of(READ_WRITE));
             Optional<Snapshot> snapshot = Snapshot.loadLatest(connection);
             if (snapshot.isPresent()) {
                 this.snapshot = snapshot.get();
@@ -185,7 +161,7 @@ public final class Processor implements Runnable {
         Snapshot oldSnapshot = this.snapshot;
         Connection connection = null;
         try {
-            connection = createReadWriteConnection();
+            connection = Database.createConnection(EnumSet.of(READ_WRITE));
             for (Team team : Config.getCurrentConfig().getTeams()) {
                 for (TagId tag : team.getTags()) {
                     AddTagEvent e = new AddTagEvent(Instant.EPOCH, tag, team.getTeamNb());
@@ -300,7 +276,7 @@ public final class Processor implements Runnable {
             {
                 Connection connection = null;
                 try {
-                    connection = createReadOnlyConnection();
+                    connection = Database.createConnection(EnumSet.of(READ_ONLY));
                     lastUpdate = getLastUpdateForReader(connection, readerId);
                     connection.commit();
                 } catch (SQLException e) {
@@ -341,7 +317,7 @@ public final class Processor implements Runnable {
         Connection connection = null;
         Snapshot oldSnapshot = this.snapshot;
         try {
-            connection = createReadWriteConnection();
+            connection = Database.createConnection(EnumSet.of(READ_WRITE));
             Event firstEvent = event;
             if (event.isUnique()) {
                 Optional<Event> other = Event.loadUnique(connection, event.getClass());

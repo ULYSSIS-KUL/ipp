@@ -9,5 +9,6 @@ repositories {
 dependencies {
     compile project(':shared')
 
+    compile group: 'com.h2database', name: 'h2', version: '1.4.+'
     compile group: 'org.postgresql', name: 'postgresql', version: '9.4+'
 }

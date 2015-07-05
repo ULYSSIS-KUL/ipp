@@ -29,6 +29,7 @@ import org.ulyssis.ipp.control.commands.AddTagCommand;
 import org.ulyssis.ipp.control.commands.PingCommand;
 import org.ulyssis.ipp.control.commands.SetEndTimeCommand;
 import org.ulyssis.ipp.control.commands.SetStartTimeCommand;
+import org.ulyssis.ipp.processor.Database;
 import org.ulyssis.ipp.processor.Processor;
 import org.ulyssis.ipp.processor.ProcessorOptions;
 import org.ulyssis.ipp.snapshot.Event;
@@ -41,9 +42,7 @@ import org.ulyssis.ipp.TagId;
 import redis.clients.jedis.BinaryJedisPubSub;
 import redis.clients.jedis.Jedis;
 
-import javax.swing.text.html.Option;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -52,16 +51,13 @@ import java.nio.file.Paths;
 import java.sql.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static uk.co.datumedge.hamcrest.json.SameJSONAs.sameJSONAs;
+import static org.ulyssis.ipp.processor.Database.ConnectionFlags.READ_WRITE;
+import static org.ulyssis.ipp.processor.Database.ConnectionFlags.READ_ONLY;
 
 public class TestWithRedis {
     private static Process redisProcess;
@@ -143,6 +139,29 @@ public class TestWithRedis {
         selfTest();
     }
 
+    @BeforeClass
+    public static void createDb() throws Exception {
+        Connection connection = Database.createConnection(EnumSet.of(READ_WRITE));
+        Database.initDb(connection);
+        connection.commit();
+    }
+
+    @Before
+    public void clearDb() throws Exception {
+        List<String> statements = Arrays.asList(
+                "DELETE FROM \"snapshots\"",
+                "DELETE FROM \"tagSeenEvents\"",
+                "DELETE FROM \"events\""
+        );
+        Connection connection = Database.createConnection(EnumSet.of(READ_WRITE));
+        for (String statement : statements) {
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute(statement);
+            }
+        }
+        connection.commit();
+    }
+
     public static void selfTest() throws Exception {
         jedis.set("Bla", "Bloe");
         assertThat("Bloe", equalTo(jedis.get("Bla")));
@@ -169,54 +188,6 @@ public class TestWithRedis {
     @After
     public void clearRedis() {
         jedis.flushAll();
-    }
-
-    @Before
-    @After
-    public void clearDb() throws Exception {
-        String url = "jdbc:postgresql://ipptest.local/ipp"; // TODO: Make URL configurable
-        Properties props = new Properties();
-        props.setProperty("user", "ipp");
-        props.setProperty("password", "ipp");
-        props.setProperty("readOnly", "false");
-        Connection connection = null;
-        try {
-            connection = DriverManager.getConnection(url, props);
-            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-            connection.setAutoCommit(false);
-            // TODO: Actually recreate the tables!
-            try (Statement stmt = connection.createStatement()) {
-                stmt.execute("DELETE FROM \"snapshots\"");
-            }
-            try (Statement stmt = connection.createStatement()) {
-                stmt.execute("DELETE FROM \"tagSeenEvents\"");
-            }
-            try (Statement stmt = connection.createStatement()) {
-                stmt.execute("DELETE FROM \"events\"");
-            }
-            connection.commit();
-        } catch (Exception e) {
-            if (connection != null) connection.rollback();
-            throw e;
-        }
-    }
-
-    public Connection createConnection() throws Exception {
-        String url = "jdbc:postgresql://ipptest.local/ipp"; // TODO: Make URL configurable
-        Properties props = new Properties();
-        props.setProperty("user", "ipp");
-        props.setProperty("password", "ipp");
-        props.setProperty("readOnly", "true");
-        Connection connection = null;
-        try {
-            connection = DriverManager.getConnection(url, props);
-            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-            connection.setAutoCommit(false);
-            return connection;
-        } catch (Exception e) {
-            if (connection != null) connection.rollback();
-            throw e;
-        }
     }
 
     @After
@@ -305,7 +276,7 @@ public class TestWithRedis {
         CommandDispatcher.Result result = dispatcher.send(
                 new AddTagCommand(new TagId("abcd"), 0));
         assertThat(result, equalTo(CommandDispatcher.Result.SUCCESS));
-        Connection connection = createConnection();
+        Connection connection = Database.createConnection(EnumSet.of(READ_ONLY));
         Optional<Snapshot> snapshot = Snapshot.loadLatest(connection);
         assertThat(snapshot.isPresent(), equalTo(true));
         assertThat(snapshot.get().getTeamTagMap().tagToTeam("abcd").get(), equalTo(0));
@@ -323,7 +294,7 @@ public class TestWithRedis {
         CommandDispatcher.Result result = dispatcher.send(
                 new SetStartTimeCommand(Instant.EPOCH));
         assertThat(result, equalTo(CommandDispatcher.Result.SUCCESS));
-        Connection connection = createConnection();
+        Connection connection = Database.createConnection(EnumSet.of(READ_ONLY));
         Optional<Snapshot> latestSnapshot = Snapshot.loadLatest(connection);
         assertThat(latestSnapshot.isPresent(), equalTo(true));
         assertThat(latestSnapshot.get().getStartTime(), equalTo(Instant.EPOCH));
@@ -341,7 +312,7 @@ public class TestWithRedis {
         CommandDispatcher.Result result = dispatcher.send(
                 new SetEndTimeCommand(Instant.EPOCH));
         assertThat(result, equalTo(CommandDispatcher.Result.SUCCESS));
-        Connection connection = createConnection();
+        Connection connection = Database.createConnection(EnumSet.of(READ_ONLY));
         Optional<Snapshot> latestSnapshot = Snapshot.loadLatest(connection);
         assertThat(latestSnapshot.isPresent(), equalTo(true));
         assertThat(latestSnapshot.get().getEndTime(), equalTo(Instant.EPOCH));
@@ -384,7 +355,7 @@ public class TestWithRedis {
         waitForSnapshot();
         readerJedis.close();
         assertThat(semaphore.availablePermits(), equalTo(0));
-        Connection connection = createConnection();
+        Connection connection = Database.createConnection(EnumSet.of(READ_ONLY));
         Optional<Snapshot> snapshot = Snapshot.loadLatest(connection);
         assertThat(snapshot.isPresent(), equalTo(true));
         assertThat(snapshot.get().getTeamTagMap().tagToTeam("abcd").get(), equalTo(0));
@@ -400,8 +371,7 @@ public class TestWithRedis {
         waitForSnapshot();
         dispatcher.send(new SetStartTimeCommand(Instant.EPOCH.plus(20, ChronoUnit.SECONDS)));
         waitForSnapshot();
-        Jedis jedis = JedisHelper.get(new URI("redis://127.0.0.1:12345/0"));
-        Connection connection = createConnection();
+        Connection connection = Database.createConnection(EnumSet.of(READ_ONLY));
         try (Statement stmt = connection.createStatement()) {
             ResultSet rs = stmt.executeQuery("SELECT count(*) FROM \"snapshots\"");
             rs.next();

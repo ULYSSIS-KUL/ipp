@@ -28,7 +28,6 @@ import java.sql.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.PROPERTY, property="type")
@@ -119,7 +118,7 @@ public abstract class Event {
     }
 
     public static Optional<Event> loadUnique(Connection connection, Class<? extends Event> eventType) throws SQLException, IOException {
-        String statement = "SELECT \"id\", \"data\" FROM \"events\" WHERE \"type\" = ? AND removed = false";
+        String statement = "SELECT \"id\", \"data\" FROM \"events\" WHERE \"type\" = ? AND \"removed\" = false";
         try (PreparedStatement stmt = connection.prepareStatement(statement)) {
             stmt.setString(1, eventType.getSimpleName());
             ResultSet result = stmt.executeQuery();

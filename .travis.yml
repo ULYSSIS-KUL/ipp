@@ -3,8 +3,8 @@ jdk:
   - oraclejdk8
 install: true
 before_script:
-  - psql -c 'CREATE USER ipp UNENCRYPTED PASSWORD \'ipp\'' -U postgres
-  - psql -c 'CREATE DATABASE ipp OWNER ipp' -U postgres
+  - psql -c "CREATE USER ipp UNENCRYPTED PASSWORD 'ipp'" -U postgres
+  - psql -c "CREATE DATABASE ipp OWNER ipp" -U postgres
 script:
   - ./gradlew
   - ./gradlew postgresTest

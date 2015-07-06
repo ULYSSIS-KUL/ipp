@@ -27,9 +27,6 @@ public final class ProcessorOptions extends Options {
     @Option(name="--redis", usage="The URI of the redis instance for this processor, defaults to redis://127.0.0.1",
             metaVar="<uri>", required=false)
     private URI redisUri = URI.create("redis://127.0.0.1");
-    @Option(name="--clone", usage="Set this variable to clone the state of another processor",
-            metaVar="<uri>", required=false)
-    private URI clone = null;
 
     private ProcessorOptions() {
     }
@@ -50,9 +47,5 @@ public final class ProcessorOptions extends Options {
 
     public URI getRedisUri() {
         return redisUri;
-    }
-
-    public URI getClone() {
-        return clone;
     }
 }

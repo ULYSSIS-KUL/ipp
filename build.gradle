@@ -1,7 +1,6 @@
 apply plugin: 'java'
 apply plugin: 'idea'
 
-// TODO: Uncomment check when integration tests support PostgreSQL
 defaultTasks 'updateSubmodules', 'lib/jwt:dist', 'check', 'installDist', 'war', 'alljavadoc'
 
 buildscript {

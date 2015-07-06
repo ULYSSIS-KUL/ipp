@@ -35,19 +35,25 @@ public final class Database {
         READ_ONLY
     }
 
+    private static String databaseURI = null;
+
+    public static void setDatabaseURI(String uri) {
+        databaseURI = uri;
+    }
+
     public static Connection createConnection(EnumSet<ConnectionFlags> flags) throws SQLException {
-        assert flags.contains(ConnectionFlags.READ_ONLY) != flags.contains(ConnectionFlags.READ_WRITE);
+        assert flags.contains(ConnectionFlags.READ_ONLY) != /* XOR */ flags.contains(ConnectionFlags.READ_WRITE);
+        assert databaseURI != null;
         boolean readOnly = flags.contains(ConnectionFlags.READ_ONLY);
-//        String url = "jdbc:postgresql://ipptest.local/ipp"; // TODO: Make URL configurable
-        String url = "jdbc:h2:mem:ipp";
         Properties props = new Properties();
-        props.setProperty("user", "ipp");
-        props.setProperty("password", "ipp");
         props.setProperty("readOnly", readOnly ? "true" : "false");
         Connection connection = null;
         try {
-            connection = DriverManager.getConnection(url);
-//            connection = DriverManager.getConnection(url, props);
+            if (databaseURI.startsWith("jdbc:h2")) {
+                connection = DriverManager.getConnection(databaseURI);
+            } else {
+                connection = DriverManager.getConnection(databaseURI, props);
+            }
             connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             connection.setAutoCommit(false);
             return connection;

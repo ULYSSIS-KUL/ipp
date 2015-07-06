@@ -69,6 +69,8 @@ public class TestWithRedis {
 
     private List<Thread> runningThreads = new ArrayList<>();
 
+    public static String connectionURI = System.getProperty("testJDBCURI", "jdbc:h2:mem:ipp");
+
     @BeforeClass
     public static void startRedis() throws Exception {
         // Place a "redispath" file with the path to Redis in the resources folder
@@ -141,6 +143,7 @@ public class TestWithRedis {
 
     @BeforeClass
     public static void createDb() throws Exception {
+        Database.setDatabaseURI(connectionURI);
         Connection connection = Database.createConnection(EnumSet.of(READ_WRITE));
         Database.initDb(connection);
         connection.commit();

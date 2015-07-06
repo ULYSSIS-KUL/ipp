@@ -2,5 +2,12 @@ language: java
 jdk:
   - oraclejdk8
 install: true
-script: ./gradlew
+before_script:
+  - psql -c 'CREATE USER ipp UNENCRYPTED PASSWORD \'ipp\'' -U postgres
+  - psql -c 'CREATE DATABASE ipp OWNER ipp' -U postgres
+script:
+  - ./gradlew
+  - ./gradlew postgresTest
 after_success: ./gradlew jacocoRootReport coveralls
+addons:
+  postgresql: "9.3"

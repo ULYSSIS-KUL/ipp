@@ -4,8 +4,8 @@ environment:
 before_build:
   - cinst -y redis-64
   - git submodule update --init --recursive
-  - psql postgresql://localhost/?user=postgres&password=Password12! -c "CREATE USER ipp UNENCRYPTED PASSWORD 'ipp'"
-  - psql postgresql://localhost/?user=postgres&password=Password12! -c "CREATE DATABASE ipp OWNER ipp"
+  - psql "postgresql://postgres:Password12!@localhost" -c "CREATE USER ipp UNENCRYPTED PASSWORD 'ipp'"
+  - psql "postgresql://postgres:Password12!@localhost" -c "CREATE DATABASE ipp OWNER ipp"
 build_script:
   - .\gradlew.bat
   - .\gradlew.bat integrationTest

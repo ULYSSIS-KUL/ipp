@@ -1,0 +1,21 @@
+---
+- name: Make sure PostgreSQL 9.3 is up to date
+  apt: pkg=postgresql-9.3 state=latest
+- name: Make sure that the psycopg2 module is installed
+  apt: pkg=python-psycopg2 state=latest
+- name: Ensure that postgres is running
+  service: name=postgresql state=started enabled=yes
+- name: Add ipp user
+  postgresql_user: name=ipp password=ipp
+  become_user: postgres
+- name: Add ipp database
+  postgresql_db: name=ipp owner=ipp
+  become_user: postgres
+- name: Install pg_hba
+  copy: src=pg_hba.conf dest=/etc/postgresql/9.3/main/pg_hba.conf owner=postgres group=postgres mode=0640
+  notify:
+    - restart postgresql
+- name: Install postgresql.conf
+  copy: src=postgresql.conf dest=/etc/postgresql/9.3/main/postgresql.conf owner=postgres group=postgres mode=0644
+  notify:
+    - restart postgresql

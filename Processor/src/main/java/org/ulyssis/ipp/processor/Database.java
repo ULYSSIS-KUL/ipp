@@ -17,6 +17,10 @@
  */
 package org.ulyssis.ipp.processor;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -27,6 +31,8 @@ import java.util.List;
 import java.util.Properties;
 
 public final class Database {
+    private static final Logger LOG = LogManager.getLogger(Database.class);
+
     @SuppressWarnings("unused")
     private Database() {}
 
@@ -35,9 +41,9 @@ public final class Database {
         READ_ONLY
     }
 
-    private static String databaseURI = null;
+    private static URI databaseURI = null;
 
-    public static void setDatabaseURI(String uri) {
+    public static void setDatabaseURI(URI uri) {
         databaseURI = uri;
     }
 
@@ -49,15 +55,20 @@ public final class Database {
         props.setProperty("readOnly", readOnly ? "true" : "false");
         Connection connection = null;
         try {
-            if (databaseURI.startsWith("jdbc:h2")) {
-                connection = DriverManager.getConnection(databaseURI);
+            if (databaseURI.toString().startsWith("jdbc:h2")) {
+                Class.forName("org.h2.Driver");
+                connection = DriverManager.getConnection(databaseURI.toString());
             } else {
-                connection = DriverManager.getConnection(databaseURI, props);
+                Class.forName("org.postgresql.Driver");
+                connection = DriverManager.getConnection(databaseURI.toString(), props);
             }
             connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             connection.setAutoCommit(false);
             return connection;
-        } catch (Exception e) {
+        } catch (ClassNotFoundException e) {
+            LOG.fatal("Couldn't load driver!", e);
+            throw new IllegalStateException(e);
+        } catch (SQLException e) {
             if (connection != null) connection.rollback();
             throw e;
         }

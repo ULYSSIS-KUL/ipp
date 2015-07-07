@@ -98,6 +98,15 @@ public final class Processor implements Runnable {
     private Snapshot snapshot;
 
     public Processor(final ProcessorOptions options) {
+        Database.setDatabaseURI(options.getDatabaseUri());
+        if (options.shouldClearDb()) {
+            try (Connection connection = Database.createConnection(EnumSet.of(READ_WRITE))) {
+                Database.initDb(connection);
+                connection.commit();
+            } catch (SQLException e) {
+                LOG.fatal("Error initializing database!", e);
+            }
+        }
         URI uri = options.getRedisUri();
         this.eventQueue = new LinkedBlockingQueue<>();
         this.eventCallbacks  = new ConcurrentHashMap<>();

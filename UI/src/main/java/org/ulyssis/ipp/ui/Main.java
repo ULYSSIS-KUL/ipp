@@ -27,6 +27,7 @@ import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ListenerInfo;
 import io.undertow.servlet.api.LoginConfig;
+import org.ulyssis.ipp.processor.Database;
 
 import javax.servlet.ServletException;
 import java.util.concurrent.Executors;
@@ -42,6 +43,8 @@ public final class Main {
                         .addListener(new ListenerInfo(ServletInit.class))
                 .addServlet(Servlets.servlet("UIServlet", UIServlet.class)
                         .addInitParam("config", options.getConfigFile().toString())
+                        .addInitParam("databaseUri", options.getDatabaseUri().toString())
+                        .addInitParam("redisUri", options.getRedisUri().toString())
                         .setAsyncSupported(true)
                         .addMapping("/*"));
 

@@ -143,7 +143,7 @@ public class TestWithRedis {
 
     @BeforeClass
     public static void createDb() throws Exception {
-        Database.setDatabaseURI(connectionURI);
+        Database.setDatabaseURI(URI.create(connectionURI));
         Connection connection = Database.createConnection(EnumSet.of(READ_WRITE));
         Database.initDb(connection);
         connection.commit();
@@ -245,6 +245,10 @@ public class TestWithRedis {
         Config.setCurrentConfig(config);
     }
 
+    private CommandDispatcher spawnDefaultProcessor() throws InterruptedException {
+        return spawnProcessor("--redis","redis://127.0.0.1:12345/0","--database",connectionURI);
+    }
+
     private CommandDispatcher spawnProcessor(String... args) throws InterruptedException {
         ProcessorOptions options = ProcessorOptions.processorOptionsFromArgs(args).get();
         Processor processor = new Processor(options);
@@ -267,7 +271,7 @@ public class TestWithRedis {
     @Test
     public void testPing() throws Exception {
         setConfig("src", "test", "resources", "config1.json");
-        CommandDispatcher dispatcher = spawnProcessor("--redis", "redis://127.0.0.1:12345/0");
+        CommandDispatcher dispatcher = spawnDefaultProcessor();
         CommandDispatcher.Result result = dispatcher.send(new PingCommand());
         assertThat(result, equalTo(CommandDispatcher.Result.SUCCESS));
     }
@@ -275,7 +279,7 @@ public class TestWithRedis {
     @Test
     public void testAddTag() throws Exception {
         setConfig("src", "test", "resources", "config1.json");
-        CommandDispatcher dispatcher = spawnProcessor("--redis", "redis://127.0.0.1:12345/0");
+        CommandDispatcher dispatcher = spawnDefaultProcessor();
         CommandDispatcher.Result result = dispatcher.send(
                 new AddTagCommand(new TagId("abcd"), 0));
         assertThat(result, equalTo(CommandDispatcher.Result.SUCCESS));
@@ -293,7 +297,7 @@ public class TestWithRedis {
     @Test
     public void testSetStartTime() throws Exception {
         setConfig("src", "test", "resources", "config1.json");
-        CommandDispatcher dispatcher = spawnProcessor("--redis", "redis://127.0.0.1:12345/0");
+        CommandDispatcher dispatcher = spawnDefaultProcessor();
         CommandDispatcher.Result result = dispatcher.send(
                 new SetStartTimeCommand(Instant.EPOCH));
         assertThat(result, equalTo(CommandDispatcher.Result.SUCCESS));
@@ -311,7 +315,7 @@ public class TestWithRedis {
     @Test
     public void testSetStopTime() throws Exception {
         setConfig("src", "test", "resources", "config1.json");
-        CommandDispatcher dispatcher = spawnProcessor("--redis", "redis://127.0.0.1:12345/0");
+        CommandDispatcher dispatcher = spawnDefaultProcessor();
         CommandDispatcher.Result result = dispatcher.send(
                 new SetEndTimeCommand(Instant.EPOCH));
         assertThat(result, equalTo(CommandDispatcher.Result.SUCCESS));
@@ -329,7 +333,7 @@ public class TestWithRedis {
     @Test
     public void testSingleTeamNormalLap() throws Exception {
         setConfig("src", "test", "resources", "config1.json");
-        CommandDispatcher dispatcher = spawnProcessor("--redis", "redis://127.0.0.1:12345/0");
+        CommandDispatcher dispatcher = spawnDefaultProcessor();
         dispatcher.send(new SetStartTimeCommand(Instant.EPOCH));
         waitForSnapshot();
         dispatcher.send(new SetEndTimeCommand(Instant.EPOCH.plus(15, ChronoUnit.MINUTES)));
@@ -369,7 +373,7 @@ public class TestWithRedis {
     @Test
     public void testOnlyOneEvent() throws Exception {
         setConfig("src", "test", "resources", "config1.json");
-        CommandDispatcher dispatcher = spawnProcessor("--redis", "redis://127.0.0.1:12345/0");
+        CommandDispatcher dispatcher = spawnDefaultProcessor();
         dispatcher.send(new SetStartTimeCommand(Instant.EPOCH));
         waitForSnapshot();
         dispatcher.send(new SetStartTimeCommand(Instant.EPOCH.plus(20, ChronoUnit.SECONDS)));

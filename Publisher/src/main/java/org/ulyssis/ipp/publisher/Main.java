@@ -23,6 +23,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.ulyssis.ipp.config.Config;
+import org.ulyssis.ipp.processor.Database;
 import org.ulyssis.ipp.snapshot.Snapshot;
 import org.ulyssis.ipp.snapshot.SnapshotListener;
 import org.ulyssis.ipp.utils.Serialization;
@@ -30,7 +31,6 @@ import org.ulyssis.ipp.utils.Serialization;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.io.BufferedReader;
@@ -52,7 +52,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 public final class Main {
     private static final Logger LOG = LogManager.getLogger(Main.class);
@@ -61,21 +60,20 @@ public final class Main {
     private ScheduledFuture<?> nextProcessingOfSnapshot;
 
     private final SnapshotListener snapshotListener;
-    private final Thread snapshotThread;
     private final PublisherOptions options;
-
-    private final LinkedBlockingQueue<Snapshot> snapshotQueue = new LinkedBlockingQueue<>();
 
     private final Thread httpThread;
     private final LinkedBlockingQueue<Score> scoresToSubmit = new LinkedBlockingQueue<>();
 
     private Main(PublisherOptions options) {
+        Database.setDatabaseURI(options.getDatabaseUri());
         this.options = options;
         Runtime.getRuntime().addShutdownHook(new Thread(this::interruptHook));
         Config.setCurrentConfig(Config.fromConfigurationFile(options.getConfigFile()).get());
         snapshotListener = new SnapshotListener(options.getRedisUri());
-        snapshotThread = new Thread(snapshotListener);
-        snapshotListener.addListener(onSnapshot);
+        Thread snapshotThread = new Thread(snapshotListener);
+        LinkedBlockingQueue<Snapshot> snapshotQueue = new LinkedBlockingQueue<>();
+        snapshotListener.addListener(snapshotQueue::add);
         snapshotListener.trigger();
         snapshotThread.start();
         if (options.getHttp() != null) {
@@ -99,11 +97,7 @@ public final class Main {
                 HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
 
                 // Create all-trusting host name verifier
-                HostnameVerifier allHostsValid = new HostnameVerifier() {
-                    public boolean verify(String hostname, SSLSession session) {
-                        return true;
-                    }
-                };
+                HostnameVerifier allHostsValid = (hostname, session) -> true;
 
                 // Install the all-trusting host verifier
                 HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
@@ -147,7 +141,6 @@ public final class Main {
                                 InputStream is = connection.getInputStream();
                                 BufferedReader rd = new BufferedReader(new InputStreamReader(is));
                                 String line;
-                                StringBuilder response = new StringBuilder();
                                 while((line = rd.readLine()) != null) {
                                     LOG.debug(line);
                                 }
@@ -169,7 +162,7 @@ public final class Main {
             httpThread = null;
         }
         try {
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 Snapshot snapshot = snapshotQueue.take();
                 service.submit(() -> processSnapshot(snapshot));
             }
@@ -185,8 +178,6 @@ public final class Main {
         LOG.info("Bye bye!");
         Configurator.shutdown((LoggerContext) LogManager.getContext());
     }
-
-    private final Consumer<Snapshot> onSnapshot = snapshot -> snapshotQueue.add(snapshot);
 
     private void processSnapshot(Snapshot snapshot) {
         if (nextProcessingOfSnapshot != null) {

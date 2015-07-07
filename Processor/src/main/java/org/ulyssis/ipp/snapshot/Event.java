@@ -152,6 +152,10 @@ public abstract class Event {
         }
     }
 
+    public static List<Event> loadFrom(Connection connection, Instant time) throws SQLException, IOException {
+        return loadFrom(connection, time, -1L);
+    }
+
     public static List<Event> loadFrom(Connection connection, Instant time, long id) throws SQLException, IOException {
         String statement = "SELECT \"id\",\"data\",\"removed\" FROM \"events\" " +
                 "WHERE \"time\" >= ? AND \"id\" >= ? ORDER BY \"time\" ASC, \"id\" ASC";

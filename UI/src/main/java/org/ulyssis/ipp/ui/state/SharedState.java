@@ -21,6 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.control.CommandDispatcher;
+import org.ulyssis.ipp.processor.Database;
 import org.ulyssis.ipp.publisher.Score;
 import org.ulyssis.ipp.snapshot.Snapshot;
 import org.ulyssis.ipp.status.StatusMessage;
@@ -28,14 +29,16 @@ import org.ulyssis.ipp.utils.JedisHelper;
 import org.ulyssis.ipp.utils.Serialization;
 
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.exceptions.JedisConnectionException;
 import eu.webtoolkit.jwt.WApplication;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -49,33 +52,21 @@ import java.util.function.Consumer;
 public class SharedState {
 	private static final Logger LOG = LogManager.getLogger(SharedState.class);
 	
-    // TODO: Make this configurable! Allow for multiple Redis instances!
-    private static final URI redisUri;
-    static {
-        URI uri;
-        try {
-            uri = new URI("redis://127.0.0.1");
-        } catch (URISyntaxException ignored) {
-            // Shouldn't happen
-            uri = null;
-        }
-        redisUri = uri;
-    }
+    private final URI redisUri;
     
     public URI getRedisURI() {
     	return redisUri;
     }
     
     @FunctionalInterface
-    public static interface SnapshotScoreListener {
-    	public void newSnapshotAndScore(Snapshot snapshot, Score score, boolean newSnapshot);
+    public interface SnapshotScoreListener {
+    	void newSnapshotAndScore(Snapshot snapshot, Score score, boolean newSnapshot);
     }
 
     private final ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
     private final Thread dispatcherThread;
     private final CommandDispatcher commandDispatcher;
     private final JedisHelper.BinaryCallBackPubSub statusSubscriber = new JedisHelper.BinaryCallBackPubSub();
-    private final Jedis snapshotJedis;
     private final Jedis statusJedis;
     private final Thread statusThread;
 
@@ -109,7 +100,7 @@ public class SharedState {
             } finally {
                 lock.release();
             }
-    	});
+        });
     }
     
     private void announceStatus(StatusMessage message) {
@@ -117,56 +108,55 @@ public class SharedState {
     	apps.addAll(statusMessageListeners.keySet());
     	apps.addAll(applicationToScoreListeners.keySet());
     	apps.forEach(app -> {
-    		Set<Consumer<StatusMessage>> listeners = statusMessageListeners.get(app);
-    		Set<SnapshotScoreListener> snapshotListeners = applicationToScoreListeners.get(app);
-    		Snapshot snapshot = null;
-    		Score score = null;
-    		if (message.getType() == StatusMessage.MessageType.NEW_SNAPSHOT) {
-    			try {
-                    byte[] snapshotBytes = snapshotJedis.get("snapshot".getBytes(StandardCharsets.UTF_8));
-                    try {
-                    	snapshot = Serialization.getJsonMapper().readValue(snapshotBytes, Snapshot.class);
-                    	latestSnapshot = snapshot;
-                    	score = new Score(snapshot, false);
-                    } catch (IOException e) {
-                    	LOG.error("Couldn't parse snapshot {}", new String(snapshotBytes, StandardCharsets.UTF_8), e);
+            Set<Consumer<StatusMessage>> listeners = statusMessageListeners.get(app);
+            Set<SnapshotScoreListener> snapshotListeners = applicationToScoreListeners.get(app);
+            Snapshot snapshot = null;
+            Score score = null;
+            if (message.getType() == StatusMessage.MessageType.NEW_SNAPSHOT) {
+                try (Connection connection = Database.createConnection(EnumSet.of(Database.ConnectionFlags.READ_ONLY))) {
+                    Optional<Snapshot> snapshotOptional = Snapshot.loadLatest(connection);
+                    if (snapshotOptional.isPresent()) {
+                        snapshot = snapshotOptional.get();
+                        latestSnapshot = snapshot;
+                        score = new Score(snapshot, false);
                     }
-    			} catch (JedisConnectionException e) {
-    				LOG.error("Couldn't fetch snapshot", e);
-    			} catch (NumberFormatException e) {
-    				LOG.error("Couldn't parse snapshot id {}", message.getDetails(), e);
-    			}
-    		}
-    		WApplication.UpdateLock lock = app.getUpdateLock();
-    		try {
-    			if (listeners != null) {
-    				listeners.forEach(l -> l.accept(message));
-    			}
-    			if (snapshotListeners != null && message.getType() == StatusMessage.MessageType.NEW_SNAPSHOT) {
-    				for (SnapshotScoreListener l : snapshotListeners) {
-    					l.newSnapshotAndScore(snapshot, score, true);
-    				}
-    			}
-    			app.triggerUpdate();
-    		} finally {
-    			lock.release();
-    		}
-    	});
+                } catch (SQLException e) {
+                    LOG.error("Failed to retrieve snapshot due to SQLException", e);
+                } catch (IOException e) {
+                    LOG.error("Failure processing snapshot", e);
+                }
+            }
+            WApplication.UpdateLock lock = app.getUpdateLock();
+            try {
+                if (listeners != null) {
+                    listeners.forEach(l -> l.accept(message));
+                }
+                if (snapshotListeners != null && message.getType() == StatusMessage.MessageType.NEW_SNAPSHOT) {
+                    for (SnapshotScoreListener l : snapshotListeners) {
+                        l.newSnapshotAndScore(snapshot, score, true);
+                    }
+                }
+                app.triggerUpdate();
+            } finally {
+                lock.release();
+            }
+        });
     }
 
-    public SharedState() {
+    public SharedState(URI redisUri) {
+        this.redisUri = redisUri;
         commandDispatcher = new CommandDispatcher(redisUri, Config.getCurrentConfig().getControlChannel(), Config.getCurrentConfig().getStatusChannel());
         dispatcherThread = new Thread(commandDispatcher);
         dispatcherThread.start();
-        snapshotJedis = JedisHelper.get(redisUri);
-        byte[] snapshotBytes = snapshotJedis.get("snapshot".getBytes(StandardCharsets.UTF_8));
-        if (snapshotBytes != null) {
-            try {
-                Snapshot snapshot = Serialization.getJsonMapper().readValue(snapshotBytes, Snapshot.class);
-                latestSnapshot = snapshot;
-            } catch (IOException e) {
-                LOG.error("Error reading snapshot", e);
+        try (Connection connection = Database.createConnection(EnumSet.of(Database.ConnectionFlags.READ_ONLY))) {
+            Optional<Snapshot> snapshot = Snapshot.loadLatest(connection);
+            if (snapshot.isPresent()) {
+                latestSnapshot = snapshot.get();
             }
+        } catch (SQLException e) {
+            LOG.error("Couldn't get snapshot due to SQLException", e);
+        } catch (IOException e) {
+            LOG.error("Couldn't read snapshot", e);
         }
         statusJedis = JedisHelper.get(redisUri);
         statusSubscriber.addOnMessageListener(onMessageListener);

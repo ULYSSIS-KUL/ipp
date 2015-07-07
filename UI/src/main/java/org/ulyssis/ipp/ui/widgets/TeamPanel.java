@@ -45,32 +45,27 @@ import org.ulyssis.ipp.config.Team;
 import org.ulyssis.ipp.control.commands.AddTagCommand;
 import org.ulyssis.ipp.control.commands.CorrectionCommand;
 import org.ulyssis.ipp.control.commands.RemoveTagCommand;
+import org.ulyssis.ipp.processor.Database;
 import org.ulyssis.ipp.publisher.Score;
 import org.ulyssis.ipp.snapshot.Snapshot;
 import org.ulyssis.ipp.snapshot.Event;
 import org.ulyssis.ipp.snapshot.TagSeenEvent;
 import org.ulyssis.ipp.ui.UIApplication;
 import org.ulyssis.ipp.ui.state.SharedState;
-import org.ulyssis.ipp.utils.JedisHelper;
 import org.ulyssis.ipp.utils.Serialization;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.exceptions.JedisConnectionException;
-
+import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public class TeamPanel extends CollapsablePanel {
     private static final Logger LOG = LogManager.getLogger(TeamPanel.class);
@@ -103,8 +98,7 @@ public class TeamPanel extends CollapsablePanel {
     private Optional<Snapshot> latestSnapshot = Optional.empty();
     
     private final Config config;
-    private final Jedis jedis;
-    
+
     private static final class EventsModel extends WAbstractItemModel {
     	private List<TagSeenEvent> events = Collections.emptyList();
     	private Instant oneHourAgo = Instant.now().minus(1L, ChronoUnit.HOURS);
@@ -222,13 +216,13 @@ public class TeamPanel extends CollapsablePanel {
     	sharedState.getCommandDispatcher().sendAsync(new RemoveTagCommand(tag, team.getTeamNb()));
     }
     
-    // TODO: This shouldn't be entirely based on the latest snapshot...
+    // TODO: This shouldn't be entirely based on the latest snapshot... also, share this info!
     private void updateCharts(Snapshot snapshot) {
     	Instant now = Instant.now();
     	Instant anHourAgo = now.minus(Duration.ofHours(1L));
-    	try {
-            Set<byte[]> events = jedis.zrangeByScore("events".getBytes(StandardCharsets.UTF_8), anHourAgo.toEpochMilli(), now.toEpochMilli());
-            if (events == null) {
+    	try (Connection connection = Database.createConnection(EnumSet.of(Database.ConnectionFlags.READ_ONLY))) {
+            List<Event> events = Event.loadFrom(connection, anHourAgo);
+            if (events.size() == 0) {
             	LOG.warn("No events");
             	return;
             }
@@ -238,29 +232,20 @@ public class TeamPanel extends CollapsablePanel {
             	eventTimes.add(Optional.empty());
             	eventLists.add(new ArrayList<>());
             }
-            for (byte[] eventBytes : events) {
-            	try {
-            		Event event = Serialization.getJsonMapper().readValue(eventBytes, Event.class);
-            		if (event instanceof TagSeenEvent) {
-            			final TagSeenEvent tagSeenEvent = (TagSeenEvent)event;
-            			Optional<Integer> teamNb = snapshot.getTeamTagMap().tagToTeam(tagSeenEvent.getTag());
-            			if (teamNb.isPresent() && teamNb.get().equals(team.getTeamNb())) {
-            				eventTimes.get(tagSeenEvent.getReaderId()).ifPresent(lastTime -> {
-            					try {
-            						eventLists.get(tagSeenEvent.getReaderId()).add(tagSeenEvent);
-            					} catch (Exception e) {
-            						LOG.error("Exception", e);
-            					}
-            				});
-            				eventTimes.set(tagSeenEvent.getReaderId(), Optional.of(event.getTime()));
-            			}
-            		}
-                } catch (JsonParseException e) {
-                	LOG.error("Error parsing event", e);
-                } catch (JsonMappingException e) {
-                	LOG.error("Error mapping JSON", e);
-                } catch (IOException e) {
-                	LOG.error("General IO exception", e);
+            for (Event event : events) {
+                if (event instanceof TagSeenEvent && !event.isRemoved()) { // TODO(Roel): Well, we can't actually remove it, right?
+                    final TagSeenEvent tagSeenEvent = (TagSeenEvent)event;
+                    Optional<Integer> teamNb = snapshot.getTeamTagMap().tagToTeam(tagSeenEvent.getTag());
+                    if (teamNb.isPresent() && teamNb.get().equals(team.getTeamNb())) {
+                        eventTimes.get(tagSeenEvent.getReaderId()).ifPresent(lastTime -> {
+                            try {
+                                eventLists.get(tagSeenEvent.getReaderId()).add(tagSeenEvent);
+                            } catch (Exception e) {
+                                LOG.error("Exception", e);
+                            }
+                        });
+                        eventTimes.set(tagSeenEvent.getReaderId(), Optional.of(event.getTime()));
+                    }
                 }
             }
             for (int i = 0; i < config.getNbReaders(); i++) {
@@ -277,9 +262,11 @@ public class TeamPanel extends CollapsablePanel {
                 LOG.debug("Min: {}, max: {}", charts.get(i).getAxis(Axis.XAxis).getMinimum(),
                         charts.get(i).getAxis(Axis.XAxis).getMaximum());
             }
-    	} catch (JedisConnectionException e) {
+    	} catch (SQLException e) {
     		LOG.error("Couldn't fetch events", e);
-    	}
+    	} catch (IOException e) {
+            LOG.error("Error processing events", e);
+        }
     }
 
     public TeamPanel(Team team) {
@@ -294,7 +281,6 @@ public class TeamPanel extends CollapsablePanel {
         application = UIApplication.getInstance();
         config = Config.getCurrentConfig();
         sharedState = application.getSharedState();
-        jedis = JedisHelper.get(sharedState.getRedisURI());
 
         barContent = new WTemplate(WString.tr("team-bar"));
         content = new WContainerWidget();

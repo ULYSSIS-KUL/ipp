@@ -21,9 +21,11 @@ import eu.webtoolkit.jwt.WApplication;
 import eu.webtoolkit.jwt.WEnvironment;
 import eu.webtoolkit.jwt.WtServlet;
 import org.ulyssis.ipp.config.Config;
+import org.ulyssis.ipp.processor.Database;
 import org.ulyssis.ipp.ui.state.SharedState;
 
 import javax.servlet.ServletException;
+import java.net.URI;
 import java.nio.file.Paths;
 
 public class UIServlet extends WtServlet {
@@ -42,7 +44,10 @@ public class UIServlet extends WtServlet {
         String configFile = getInitParameter("config");
         if (configFile == null) configFile = "config.json";
         Config.setCurrentConfig(Config.fromConfigurationFile(Paths.get(configFile)).get());
-        sharedState = new SharedState();
+        String redisUri = getInitParameter("redisUri");
+        String databaseUri = getInitParameter("databaseUri");
+        Database.setDatabaseURI(URI.create(databaseUri));
+        sharedState = new SharedState(URI.create(redisUri));
     }
 
     @Override

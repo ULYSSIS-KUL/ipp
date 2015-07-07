@@ -28,6 +28,14 @@ public final class ProcessorOptions extends Options {
             metaVar="<uri>", required=false)
     private URI redisUri = URI.create("redis://127.0.0.1");
 
+    // TODO: Make it possible to pass in password covertly?
+    @Option(name="--database", usage="The URI of the (PostgreSQL) database to use, in JDBC format",
+            metaVar="<uri>", required=true)
+    private URI databaseUri = null;
+
+    @Option(name="--cleardb", usage="Clear the database", required=false)
+    private boolean clearDb = false;
+
     private ProcessorOptions() {
     }
 
@@ -45,7 +53,15 @@ public final class ProcessorOptions extends Options {
         }
     }
 
+    public boolean shouldClearDb() {
+        return clearDb;
+    }
+
     public URI getRedisUri() {
         return redisUri;
+    }
+
+    public URI getDatabaseUri() {
+        return databaseUri;
     }
 }

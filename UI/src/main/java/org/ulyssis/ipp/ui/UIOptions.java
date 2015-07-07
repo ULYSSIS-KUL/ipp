@@ -17,18 +17,36 @@
  */
 package org.ulyssis.ipp.ui;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.kohsuke.args4j.Option;
 import org.ulyssis.ipp.config.Options;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Optional;
 
 public final class UIOptions extends Options {
+    private static final Logger LOG = LogManager.getLogger(UIOptions.class);
+
     @Option(name="-p", usage="The port that the UI should be served at",
             aliases="--port", metaVar="<port>", required=false)
     private int port = 8080;
     @Option(name="-H", usage="The host or IP address that the UI should be served at, defaults to all interfaces",
             aliases="--host", metaVar="<host>", required=false)
     private String host = "0.0.0.0";
+    @Option(name="-r", usage="The URI of the Redis server to use, defaults to redis://localhost", aliases="--redis", metaVar="<redis URI>")
+    private URI redisUri;
+    {
+        try {
+            redisUri = new URI("redis://localhost");
+        } catch (URISyntaxException e) {
+            LOG.fatal("Couldn't parse the default URI?!", e);
+        }
+    }
+    @Option(name="--database", usage="The database to connect to, in JDBC connection string format",
+            metaVar="<uri>", required=true)
+    private URI databaseUri = null;
 
     private UIOptions() {
     }
@@ -45,6 +63,14 @@ public final class UIOptions extends Options {
         } else {
             return Optional.empty();
         }
+    }
+
+    public URI getRedisUri() {
+        return redisUri;
+    }
+
+    public URI getDatabaseUri() {
+        return databaseUri;
     }
 
     public int getPort() {

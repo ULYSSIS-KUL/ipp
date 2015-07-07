@@ -41,6 +41,9 @@ public final class PublisherOptions extends Options {
         }
     }
 
+    @Option(name="--database", usage="The database to retrieve the latest snapshot from", metaVar="<uri>", required=true)
+    private URI databaseUri;
+
     @Option(name="-o", usage="The file to write the score to", aliases={"--out", "--output"}, metaVar="<output>", required=true)
     private Path outputFile;
 
@@ -58,6 +61,10 @@ public final class PublisherOptions extends Options {
 
     public URI getRedisUri() {
         return redisUri;
+    }
+
+    public URI getDatabaseUri() {
+        return databaseUri;
     }
 
     public Path getOutputFile() {

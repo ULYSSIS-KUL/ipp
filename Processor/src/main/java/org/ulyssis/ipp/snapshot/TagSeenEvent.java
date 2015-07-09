@@ -102,12 +102,13 @@ public final class TagSeenEvent extends Event {
         TagSeenEvent otherEvent = (TagSeenEvent) other;
         return tag.equals(otherEvent.tag) &&
                 readerId == otherEvent.readerId &&
-                getTime().equals(otherEvent.getTime());
+                getTime().equals(otherEvent.getTime()) &&
+                updateCount == otherEvent.updateCount;
     }
 
     @Override
     public int hashCode() {
-        return tag.toString().hashCode() ^ readerId ^ getTime().hashCode();
+        return tag.toString().hashCode() ^ readerId ^ getTime().hashCode() ^ Long.hashCode(updateCount);
     }
 
     @Override

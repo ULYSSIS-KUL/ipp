@@ -48,6 +48,10 @@ public final class MessageEvent extends Event {
         return new MessageEvent(cmd.getTime(), cmd.getMessage());
     }
 
+    public String getMessage() {
+        return message;
+    }
+
     @Override
     public boolean isRemovable() {
         return true;

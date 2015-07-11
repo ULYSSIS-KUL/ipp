@@ -22,7 +22,7 @@ Vagrant.configure(2) do |config|
 
   config.vm.provision 'ansible' do |ansible|
     ansible.groups = {
-      'readers' => ['reader-1', 'reader-2'],
+      'readers' => ['reader-1', 'reader-2', 'reader-3'],
       'processors' => ['processor'],
       'ui' => ['ui'],
     }

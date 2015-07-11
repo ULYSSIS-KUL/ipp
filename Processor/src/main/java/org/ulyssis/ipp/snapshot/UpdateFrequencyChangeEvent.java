@@ -36,7 +36,7 @@ public final class UpdateFrequencyChangeEvent extends Event {
 
     @Override
     protected Snapshot doApply(Snapshot before) {
-        return Snapshot.builder(getTime()).fromSnapshot(before).withUpdateFrequency(updateFrequency).build();
+        return Snapshot.builder(getTime(), before).withUpdateFrequency(updateFrequency).build();
     }
 
     public int getUpdateFrequency() {

@@ -118,7 +118,7 @@ public final class Processor implements Runnable {
         this.statusReporter = new StatusReporter(uri, Config.getCurrentConfig().getStatusChannel());
         this.commandProcessor = new CommandProcessor(uri, Config.getCurrentConfig().getControlChannel(), statusReporter);
         initCommandProcessor();
-        snapshot = Snapshot.builder(Instant.EPOCH).build();
+        snapshot = new Snapshot(Instant.EPOCH);
         if (!restoreFromDb()) {
             registerInitialTags();
         }
@@ -340,15 +340,17 @@ public final class Processor implements Runnable {
             event.save(connection);
             Snapshot snapshotToUpdateFrom = this.snapshot;
             if (!firstEvent.getTime().isAfter(this.snapshot.getSnapshotTime())) {
+                LOG.debug("Event before current snapshot, loading snapshot before");
                 Optional<Snapshot> s = Snapshot.loadBefore(connection, firstEvent.getTime());
                 if (s.isPresent()) snapshotToUpdateFrom = s.get();
-                else snapshotToUpdateFrom = Snapshot.builder(Instant.EPOCH).build();
+                else snapshotToUpdateFrom = new Snapshot(Instant.EPOCH);
             }
             List<Event> events;
             Snapshot.deleteAfter(connection, snapshotToUpdateFrom);
+            LOG.debug("Updating from snapshot: {}", snapshotToUpdateFrom.getId());
             if (snapshotToUpdateFrom.getId().isPresent()) {
                 assert snapshotToUpdateFrom.getEventId().isPresent();
-                events = Event.loadFrom(connection, snapshotToUpdateFrom.getSnapshotTime(), snapshotToUpdateFrom.getEventId().get());
+                events = Event.loadAfter(connection, snapshotToUpdateFrom.getSnapshotTime(), snapshotToUpdateFrom.getEventId().get());
             } else {
                 events = Event.loadAll(connection);
             }
@@ -358,6 +360,7 @@ public final class Processor implements Runnable {
                     snapshotToUpdateFrom.save(connection);
                 }
             }
+            LOG.debug("Updated up to snapshot: {}", snapshotToUpdateFrom.getId());
             this.snapshot = snapshotToUpdateFrom;
             connection.commit();
             // TODO: Provide a sensible message for NEW_SNAPSHOT?

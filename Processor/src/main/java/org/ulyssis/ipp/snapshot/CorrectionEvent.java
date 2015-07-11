@@ -71,8 +71,7 @@ public final class CorrectionEvent extends Event {
         } else {
             newTeamState = new TeamState().addCorrection(correction);
         }
-        return Snapshot.builder(getTime())
-                .fromSnapshot(snapshot)
+        return Snapshot.builder(getTime(), snapshot)
                 .withTeamStates(snapshot.getTeamStates().setStateForTeam(teamNb, newTeamState))
                 .build();
     }

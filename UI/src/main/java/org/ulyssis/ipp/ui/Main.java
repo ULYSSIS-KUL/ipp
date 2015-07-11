@@ -26,11 +26,8 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ListenerInfo;
-import io.undertow.servlet.api.LoginConfig;
-import org.ulyssis.ipp.processor.Database;
 
 import javax.servlet.ServletException;
-import java.util.concurrent.Executors;
 
 public final class Main {
     public static void main(String[] args) {

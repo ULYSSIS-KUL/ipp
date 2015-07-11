@@ -38,7 +38,7 @@ public final class StartEvent extends Event {
 
     @Override
     protected Snapshot doApply(Snapshot snapshot) {
-        return Snapshot.builder(getTime()).fromSnapshot(snapshot).withStartTime(getTime()).build();
+        return Snapshot.builder(getTime(), snapshot).withStartTime(getTime()).build();
     }
 
     public static StartEvent fromCommand(Command command) {

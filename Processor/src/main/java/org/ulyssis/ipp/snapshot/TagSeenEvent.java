@@ -64,9 +64,7 @@ public final class TagSeenEvent extends Event {
     }
 
     protected Snapshot doApply(Snapshot snapshot) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Applying TagSeenEvent for tag {}, reader id {}", tag, readerId);
-        }
+        LOG.debug("Applying TagSeenEvent for tag {}, reader id {}", tag, readerId);
         if (snapshot.getStartTime().isBefore(getTime()) &&
                 snapshot.getEndTime().isAfter(getTime())) {
             Optional<Integer> teamNb = snapshot.getTeamTagMap().tagToTeam(tag);
@@ -79,8 +77,7 @@ public final class TagSeenEvent extends Event {
                     newTeamState = (new TeamState()).addTagSeenEvent(snapshot, this);
                 }
                 TeamStates newTeamStates = snapshot.getTeamStates().setStateForTeam(teamNb.get(), newTeamState);
-                Snapshot.Builder builder = Snapshot.builder(getTime())
-                        .fromSnapshot(snapshot)
+                Snapshot.Builder builder = Snapshot.builder(getTime(), snapshot)
                         .withTeamStates(newTeamStates);
                 if (snapshot.getStatus().isPublic()) {
                     builder.withPublicTeamStates(newTeamStates);

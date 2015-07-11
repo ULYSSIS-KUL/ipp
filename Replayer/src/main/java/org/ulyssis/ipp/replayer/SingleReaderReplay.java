@@ -1,6 +1,8 @@
 package org.ulyssis.ipp.replayer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ulyssis.ipp.updates.TagUpdate;
 import org.ulyssis.ipp.utils.Serialization;
 
@@ -12,12 +14,14 @@ import java.util.Optional;
 
 // TODO: SingleReaderReplay is a shitty name
 public final class SingleReaderReplay {
+    private static final Logger LOG = LogManager.getLogger(SingleReaderReplay.class);
+
     private final int id;
     private ObjectMapper jsonMapper;
     private BufferedReader reader;
     private TagUpdate nextUpdate;
     private Exception exception = null;
-    long sn = 0;
+    private long sn = 0;
 
     public SingleReaderReplay(int readerId, Path replayFile) throws Exception {
         id = readerId;
@@ -44,6 +48,7 @@ public final class SingleReaderReplay {
                     nextUpdate = null;
                 }
             } while (nextUpdate != null && nextUpdate.getReaderId() != id);
+            LOG.debug("Read line: {} {} {}", nextUpdate.getTag(), nextUpdate.getReaderId(), nextUpdate.getUpdateCount());
         } catch (Exception e) {
             nextUpdate = null;
             throw e;

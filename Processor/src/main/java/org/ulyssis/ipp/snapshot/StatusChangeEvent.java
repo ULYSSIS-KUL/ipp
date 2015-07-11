@@ -49,7 +49,7 @@ public final class StatusChangeEvent extends Event {
 
     @Override
     protected Snapshot doApply(Snapshot before) {
-        Snapshot.Builder builder = Snapshot.builder(getTime()).fromSnapshot(before).withStatus(status);
+        Snapshot.Builder builder = Snapshot.builder(getTime(), before).withStatus(status);
         if (!before.getStatus().isPublic() && status.isPublic()) {
             builder.withPublicTeamStates(before.getTeamStates());
         }

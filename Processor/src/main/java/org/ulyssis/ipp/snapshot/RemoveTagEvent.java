@@ -39,7 +39,7 @@ public final class RemoveTagEvent extends TagEvent {
     @Override
     protected Snapshot doApply(Snapshot snapshot) {
         TeamTagMap newTeamTagMap = snapshot.getTeamTagMap().removeTag(getTag());
-        return Snapshot.builder(getTime()).fromSnapshot(snapshot).withTeamTagMap(newTeamTagMap).build();
+        return Snapshot.builder(getTime(), snapshot).withTeamTagMap(newTeamTagMap).build();
     }
 
     public static RemoveTagEvent fromCommand(Command command) {

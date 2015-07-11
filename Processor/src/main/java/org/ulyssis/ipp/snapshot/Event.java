@@ -21,6 +21,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ulyssis.ipp.utils.Serialization;
 
 import java.io.IOException;
@@ -41,6 +43,8 @@ import java.util.Optional;
                 @JsonSubTypes.Type(value=MessageEvent.class),
                 @JsonSubTypes.Type(value=StatusChangeEvent.class)})
 public abstract class Event {
+    private static final Logger LOG = LogManager.getLogger(Event.class);
+
     @JsonIgnore
     private long id = -1;
     @JsonIgnore
@@ -96,6 +100,10 @@ public abstract class Event {
     public final Snapshot apply(Snapshot before) {
         assert !removed;
         Snapshot result = doApply(before);
+        if (result == before && before.getEventId().isPresent()) {
+            // We need to copy it anyway
+            result = Snapshot.builder(getTime(), before).build();
+        }
         result.eventId = this.id;
         return result;
     }
@@ -153,16 +161,11 @@ public abstract class Event {
     }
 
     public static List<Event> loadFrom(Connection connection, Instant time) throws SQLException, IOException {
-        return loadFrom(connection, time, -1L);
-    }
-
-    public static List<Event> loadFrom(Connection connection, Instant time, long id) throws SQLException, IOException {
         String statement = "SELECT \"id\",\"data\",\"removed\" FROM \"events\" " +
-                "WHERE \"time\" >= ? AND \"id\" >= ? ORDER BY \"time\" ASC, \"id\" ASC";
+                "WHERE \"time\" >= ? ORDER BY \"time\" ASC, \"id\" ASC";
         List<Event> events = new ArrayList<>();
         try (PreparedStatement stmt = connection.prepareStatement(statement)) {
             stmt.setTimestamp(1, Timestamp.from(time));
-            stmt.setLong(2, id);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 String evString = rs.getString("data");
@@ -172,6 +175,28 @@ public abstract class Event {
                 events.add(event);
             }
         }
+        return events;
+    }
+
+    public static List<Event> loadAfter(Connection connection, Instant time, long id) throws SQLException, IOException {
+        String statement = "SELECT \"id\",\"data\",\"removed\" FROM \"events\" " +
+                "WHERE \"time\" > ? OR (\"time\" = ? AND \"id\" > ?) ORDER BY \"time\" ASC, \"id\" ASC";
+        List<Event> events = new ArrayList<>();
+        try (PreparedStatement stmt = connection.prepareStatement(statement)) {
+            stmt.setTimestamp(1, Timestamp.from(time));
+            stmt.setTimestamp(2, Timestamp.from(time));
+            stmt.setLong(3, id);
+            LOG.debug("Executing query: {}", stmt);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                String evString = rs.getString("data");
+                Event event = Serialization.getJsonMapper().readValue(evString, Event.class);
+                event.id = rs.getLong("id");
+                event.removed = rs.getBoolean("removed");
+                events.add(event);
+            }
+        }
+        LOG.debug("Loaded {} events", events.size());
         return events;
     }
 

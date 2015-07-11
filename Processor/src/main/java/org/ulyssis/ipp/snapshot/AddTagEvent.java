@@ -38,7 +38,7 @@ public final class AddTagEvent extends TagEvent {
 
     protected Snapshot doApply(Snapshot snapshot) {
         TeamTagMap newTeamTagMap = snapshot.getTeamTagMap().addTagToTeam(getTag(), getTeamNb());
-        return Snapshot.builder(getTime()).fromSnapshot(snapshot).withTeamTagMap(newTeamTagMap).build();
+        return Snapshot.builder(getTime(), snapshot).withTeamTagMap(newTeamTagMap).build();
     }
 
     public static AddTagEvent fromCommand(Command command) {

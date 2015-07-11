@@ -59,7 +59,7 @@ public class TestSnapshot {
 
     @Test
     public void testSerializeToJson_DefaultObject() throws Exception {
-        Snapshot snapshot = Snapshot.builder(Instant.EPOCH)
+        Snapshot snapshot = Snapshot.builder(Instant.EPOCH, null)
                 .withStartTime(Instant.EPOCH)
                 .withEndTime(Instant.EPOCH)
                 .build();
@@ -70,12 +70,12 @@ public class TestSnapshot {
 
     @Test
     public void testSerializeToJson_ComplexerObject() throws Exception {
-        Snapshot snapshot = Snapshot.builder(Instant.EPOCH)
+        Snapshot snapshot = Snapshot.builder(Instant.EPOCH, null)
                 .withStartTime(Instant.EPOCH)
                 .withEndTime(Instant.EPOCH)
                 .withTeamStates(new TeamStates()
                         .setStateForTeam(0, new TeamState().addTagSeenEvent(
-                                Snapshot.builder(Instant.MIN).build(),
+                                new Snapshot(Instant.EPOCH),
                                 new TagSeenEvent(Instant.EPOCH, new TagId("ABCD"), 0, 0L))
                                 .addTagSeenEvent(null, // TODO: It's not really clean that we're passing null here,
                                         //       but it should work fine nonetheless
@@ -92,7 +92,7 @@ public class TestSnapshot {
 
     @Test
     public void testAddTagEvent() throws Exception {
-        Snapshot snapshot = Snapshot.builder(Instant.EPOCH).build();
+        Snapshot snapshot = new Snapshot(Instant.EPOCH);
         AddTagEvent addTagEvent = new AddTagEvent(Instant.EPOCH.plus(1, ChronoUnit.SECONDS), new TagId("ABCD"), 0);
         snapshot = addTagEvent.doApply(snapshot);
         MatcherAssert.assertThat(snapshot.getTeamTagMap().tagToTeam("ABCD").get(), Matchers.equalTo(0));
@@ -100,7 +100,7 @@ public class TestSnapshot {
 
     @Test
     public void testTagSeenEvents_ShouldAddLap() throws Exception {
-        Snapshot snapshot = Snapshot.builder(Instant.EPOCH).build();
+        Snapshot snapshot = new Snapshot(Instant.EPOCH);
         AddTagEvent addTagEvent = new AddTagEvent(Instant.EPOCH.plus(1, ChronoUnit.SECONDS), new TagId("ABCD"), 0);
         snapshot = addTagEvent.doApply(snapshot);
         StartEvent startEvent = new StartEvent(Instant.EPOCH.plus(2, ChronoUnit.SECONDS));
@@ -116,7 +116,7 @@ public class TestSnapshot {
 
     @Test
     public void testTagSeenEventBeforeStart_ShouldBeIgnored() throws Exception {
-        Snapshot snapshot = Snapshot.builder(Instant.EPOCH).build();
+        Snapshot snapshot = new Snapshot(Instant.EPOCH);
         AddTagEvent addTagEvent =
                 new AddTagEvent(Instant.EPOCH.plus(1, ChronoUnit.SECONDS), new TagId("ABCD"), 0);
         snapshot = addTagEvent.doApply(snapshot);
@@ -131,7 +131,7 @@ public class TestSnapshot {
 
     @Test
     public void testTagSeenEventAfterEnd_ShouldBeIgnored() throws Exception {
-        Snapshot snapshot = Snapshot.builder(Instant.EPOCH).build();
+        Snapshot snapshot = new Snapshot(Instant.EPOCH);
         AddTagEvent addTagEvent = new AddTagEvent(Instant.EPOCH.plus(1, ChronoUnit.SECONDS), new TagId("DCBA"), 3);
         snapshot = addTagEvent.doApply(snapshot);
         StartEvent startEvent = new StartEvent(Instant.EPOCH.plus(2, ChronoUnit.SECONDS));
@@ -150,7 +150,7 @@ public class TestSnapshot {
     @Test
     public void testPredictedSpeedWhenStartedThenFirstEvent() throws Exception {
         TagId tag = new TagId("DCBA");
-        Snapshot snapshot = Snapshot.builder(Instant.EPOCH).build();
+        Snapshot snapshot = new Snapshot(Instant.EPOCH);
         AddTagEvent addTagEvent = new AddTagEvent(Instant.EPOCH, tag, 3);
         snapshot = addTagEvent.doApply(snapshot);
         StartEvent startEvent = new StartEvent(Instant.EPOCH);
@@ -171,7 +171,7 @@ public class TestSnapshot {
     @Test
     public void testPredictedSpeedWhenFirstEventThenStarted() throws Exception {
         TagId tag = new TagId("DCBA");
-        Snapshot snapshot = Snapshot.builder(Instant.EPOCH).build();
+        Snapshot snapshot = new Snapshot(Instant.EPOCH);
         AddTagEvent addTagEvent = new AddTagEvent(Instant.EPOCH, tag, 3);
         snapshot = addTagEvent.doApply(snapshot);
         TagSeenEvent tagSeenEvent =

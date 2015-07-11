@@ -34,6 +34,6 @@ public final class IdentityEvent extends Event {
 
     @Override
     protected Snapshot doApply(Snapshot before) {
-        return Snapshot.builder(getTime()).fromSnapshot(before).build();
+        return Snapshot.builder(getTime(), before).build();
     }
 }

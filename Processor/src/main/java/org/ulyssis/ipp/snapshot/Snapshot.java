@@ -19,34 +19,34 @@ package org.ulyssis.ipp.snapshot;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ulyssis.ipp.updates.Status;
 import org.ulyssis.ipp.utils.Serialization;
 
 import java.io.IOException;
 import java.sql.*;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.Optional;
 
 public final class Snapshot {
+    private static final Logger LOG = LogManager.getLogger(Snapshot.class);
+
     public static class Builder {
         private Snapshot snapshot;
 
-        private Builder(Instant time) {
-            snapshot = new Snapshot();
-            this.snapshot.snapshotTime = time;
-        }
-
-        public Builder fromSnapshot(Snapshot snapshot) {
-            this.snapshot.teamTagMap = snapshot.teamTagMap;
-            this.snapshot.startTime = snapshot.startTime;
-            this.snapshot.endTime = snapshot.endTime;
-            this.snapshot.teamStates = snapshot.teamStates;
-            this.snapshot.publicTeamStates = snapshot.publicTeamStates;
-            this.snapshot.statusMessage = snapshot.statusMessage;
-            this.snapshot.status = snapshot.status;
-            this.snapshot.updateFrequency = snapshot.updateFrequency;
-            return this;
+        private Builder(Instant time, Snapshot other) {
+            snapshot = new Snapshot(time);
+            if (other != null) {
+                snapshot.teamTagMap = other.teamTagMap;
+                snapshot.startTime = other.startTime;
+                snapshot.endTime = other.endTime;
+                snapshot.teamStates = other.teamStates;
+                snapshot.publicTeamStates = other.publicTeamStates;
+                snapshot.statusMessage = other.statusMessage;
+                snapshot.status = other.status;
+                snapshot.updateFrequency = other.updateFrequency;
+            }
         }
 
         public Builder withTeamTagMap(TeamTagMap teamTagMap) {
@@ -110,7 +110,15 @@ public final class Snapshot {
         else return Optional.empty();
     }
 
+    /**
+     * Default constructor for Jackson
+     */
+    @SuppressWarnings("unused")
     private Snapshot() {
+    }
+
+    public Snapshot(Instant time) {
+        snapshotTime = time;
     }
 
     public Instant getSnapshotTime() {
@@ -163,8 +171,8 @@ public final class Snapshot {
     private Status status = Status.NoResults;
     private int updateFrequency = 3;
 
-    public static Builder builder(Instant time) {
-        return new Builder(time);
+    public static Builder builder(Instant time, Snapshot other) {
+        return new Builder(time, other);
     }
 
     public static Optional<Snapshot> loadLatest(Connection connection) throws SQLException, IOException {
@@ -188,6 +196,7 @@ public final class Snapshot {
                 "WHERE \"time\" < ? ORDER BY \"time\" DESC, \"event\" DESC FETCH FIRST ROW ONLY";
         try (PreparedStatement stmt = connection.prepareStatement(statement)) {
             stmt.setTimestamp(1, Timestamp.from(time));
+            LOG.debug("Executing query: {}", stmt);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 String data = rs.getString("data");
@@ -230,8 +239,9 @@ public final class Snapshot {
             stmt.setTimestamp(1, timestamp);
             stmt.setTimestamp(2, timestamp);
             stmt.setLong(3, snapshot.getEventId().orElse(-1L));
-            boolean result = stmt.execute();
-            assert !result;
+            LOG.debug("Executing query: {}", stmt);
+            int affectedRows = stmt.executeUpdate();
+            LOG.debug("deleteAfter affected {} rows", affectedRows);
         }
     }
 }

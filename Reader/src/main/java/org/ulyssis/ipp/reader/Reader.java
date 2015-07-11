@@ -337,7 +337,7 @@ public final class Reader implements Runnable {
      *  Log an update to the replay log, if enabled.
      */
     private void logUpdate(byte[] updateBytes) {
-        LOG.debug("Update: {}", new String(updateBytes));
+        LOG.debug("Update: {}", LOG.isDebugEnabled() ? new String(updateBytes) : null);
         replayChannel.ifPresent(channel -> {
             try {
                 channel.write(ByteBuffer.wrap(updateBytes));

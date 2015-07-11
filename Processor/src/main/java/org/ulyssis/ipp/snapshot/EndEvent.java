@@ -38,7 +38,7 @@ public final class EndEvent extends Event {
     }
 
     protected Snapshot doApply(Snapshot snapshot) {
-        return Snapshot.builder(getTime()).fromSnapshot(snapshot).withEndTime(getTime()).build();
+        return Snapshot.builder(getTime(), snapshot).withEndTime(getTime()).build();
     }
 
     public static EndEvent fromCommand(Command command) {

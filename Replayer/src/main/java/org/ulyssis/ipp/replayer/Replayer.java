@@ -58,7 +58,7 @@ public final class Replayer implements Runnable {
             for (Map.Entry<Integer, Path> entry : replayMap.entrySet()) {
                 replays.add(new SingleReaderReplay(entry.getKey(), entry.getValue()));
             }
-            SingleReaderReplay first = null;
+            SingleReaderReplay first;
             do {
                 first = null;
                 Optional<Instant> firstInstant = Optional.empty();
@@ -101,9 +101,9 @@ public final class Replayer implements Runnable {
     private void pushUpdate(TagUpdate update) {
         try {
             byte[] updateBytes = Serialization.getJsonMapper().writeValueAsBytes(update);
-            LOG.debug("Pushing update {}:{} to Redis",
-                    update.getReaderId(), update.getUpdateCount());
-            LOG.debug("JSON: {}", Serialization.getJsonMapper().writeValueAsString(update));
+            LOG.debug("Pushing update {}:{} to Redis, tag {}",
+                    update.getReaderId(), update.getUpdateCount(), update.getTag());
+            LOG.debug("JSON: {}", LOG.isDebugEnabled() ? Serialization.getJsonMapper().writeValueAsString(update) : null);
             try {
                 Transaction t = jedis.multi();
                 Response<Long> nextUpdateCount = t.rpush("updates".getBytes(), updateBytes);

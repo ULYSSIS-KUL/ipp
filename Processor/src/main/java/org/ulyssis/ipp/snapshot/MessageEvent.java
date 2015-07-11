@@ -39,7 +39,7 @@ public final class MessageEvent extends Event {
 
     @Override
     protected Snapshot doApply(Snapshot before) {
-        return Snapshot.builder(getTime()).fromSnapshot(before).withStatusMessage(message).build();
+        return Snapshot.builder(getTime(), before).withStatusMessage(message).build();
     }
 
     public static MessageEvent fromCommand(Command command) {

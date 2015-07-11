@@ -21,14 +21,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.net.URI;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Properties;
+import java.sql.*;
+import java.util.*;
 
 public final class Database {
     private static final Logger LOG = LogManager.getLogger(Database.class);
@@ -74,39 +68,86 @@ public final class Database {
         }
     }
 
-    public static void initDb(Connection connection) throws SQLException {
+    public static void clearDb(Connection connection) throws SQLException {
         List<String> statements = Arrays.asList(
                 "DROP TABLE IF EXISTS \"events\" CASCADE",
                 "DROP TABLE IF EXISTS \"tagSeenEvents\" CASCADE",
-                "DROP TABLE IF EXISTS \"snapshots\" CASCADE",
-                "CREATE TABLE \"events\" (" +
-                    "\"id\" bigserial PRIMARY KEY NOT NULL," +
-                    "\"type\" VARCHAR(255) NOT NULL," +
-                    "\"time\" timestamp NOT NULL," +
-                    "\"data\" text NOT NULL," +
-                    "\"removed\" boolean NOT NULL" +
-                ")",
-                "CREATE UNIQUE INDEX ON \"events\" (\"time\" DESC, \"id\" DESC)",
-                "CREATE INDEX ON \"events\" (\"type\", \"removed\")",
-                "CREATE TABLE \"tagSeenEvents\" (" +
-                    "\"id\" bigint PRIMARY KEY NOT NULL," +
-                    "\"readerId\" integer NOT NULL," +
-                    "\"updateCount\" bigint NOT NULL," +
-                    "FOREIGN KEY (\"id\") REFERENCES \"events\" (\"id\")" +
-                ")",
-                "CREATE UNIQUE INDEX ON \"tagSeenEvents\" (\"readerId\", \"updateCount\" DESC)",
-                "CREATE TABLE \"snapshots\" (" +
-                    "\"id\" bigserial PRIMARY KEY NOT NULL," +
-                    "\"time\" timestamp NOT NULL," +
-                    "\"data\" text NOT NULL," +
-                    "\"event\" bigint NOT NULL," +
-                    "FOREIGN KEY (\"event\") REFERENCES \"events\" (\"id\")" +
-                ")",
-                "CREATE INDEX ON \"snapshots\" (\"time\" DESC)"
+                "DROP TABLE IF EXISTS \"snapshots\" CASCADE"
         );
         for (String statement : statements) {
             try (Statement stmt = connection.createStatement()) {
+                LOG.debug("Executing statement: {}", statement);
                 stmt.execute(statement);
+            }
+        }
+    }
+
+    private static class TableDescription {
+        String tableName;
+        List<String> createStrings;
+
+        TableDescription(String tableName, List<String> createStrings) {
+            this.tableName = tableName;
+            this.createStrings = createStrings;
+        }
+    }
+
+    public static void initDb(Connection connection) throws SQLException {
+        List<TableDescription> descriptions = Arrays.asList(
+                new TableDescription(
+                        "events",
+                        Arrays.asList(
+                            "CREATE TABLE \"events\" (" +
+                                "\"id\" bigserial PRIMARY KEY NOT NULL," +
+                                "\"type\" VARCHAR(255) NOT NULL," +
+                                "\"time\" timestamp NOT NULL," +
+                                "\"data\" text NOT NULL," +
+                                "\"removed\" boolean NOT NULL" +
+                            ")",
+                            "CREATE UNIQUE INDEX ON \"events\" (\"time\" DESC, \"id\" DESC)",
+                            "CREATE INDEX ON \"events\" (\"type\", \"removed\")"
+                        )
+                ),
+                new TableDescription(
+                        "tagSeenEvents",
+                        Arrays.asList(
+                            "CREATE TABLE \"tagSeenEvents\" (" +
+                                "\"id\" bigint PRIMARY KEY NOT NULL," +
+                                "\"readerId\" integer NOT NULL," +
+                                "\"updateCount\" bigint NOT NULL," +
+                                "FOREIGN KEY (\"id\") REFERENCES \"events\" (\"id\")" +
+                            ")",
+                            "CREATE UNIQUE INDEX ON \"tagSeenEvents\" (\"readerId\", \"updateCount\" DESC)"
+                        )
+                ),
+                new TableDescription(
+                        "snapshots",
+                        Arrays.asList(
+                            "CREATE TABLE \"snapshots\" (" +
+                                "\"id\" bigserial PRIMARY KEY NOT NULL," +
+                                "\"time\" timestamp NOT NULL," +
+                                "\"data\" text NOT NULL," +
+                                "\"event\" bigint NOT NULL," +
+                                "FOREIGN KEY (\"event\") REFERENCES \"events\" (\"id\")" +
+                            ")",
+                            "CREATE INDEX ON \"snapshots\" (\"time\" DESC)"
+                        )
+                )
+        );
+        for (TableDescription desc : descriptions) {
+            String existsCheck = "SELECT 1 FROM information_schema.tables WHERE table_name = ?";
+            try (PreparedStatement stmt = connection.prepareStatement(existsCheck)) {
+                stmt.setString(1, desc.tableName);
+                ResultSet rs = stmt.executeQuery();
+                if (!rs.next()) {
+                    // Exists check failed
+                    for (String createString : desc.createStrings) {
+                        try (Statement createStmt = connection.createStatement()) {
+                            LOG.debug("Executing statement: {}", createString);
+                            createStmt.execute(createString);
+                        }
+                    }
+                }
             }
         }
     }

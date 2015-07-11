@@ -99,13 +99,14 @@ public final class Processor implements Runnable {
 
     public Processor(final ProcessorOptions options) {
         Database.setDatabaseURI(options.getDatabaseUri());
-        if (options.shouldClearDb()) {
-            try (Connection connection = Database.createConnection(EnumSet.of(READ_WRITE))) {
-                Database.initDb(connection);
-                connection.commit();
-            } catch (SQLException e) {
-                LOG.fatal("Error initializing database!", e);
+        try (Connection connection = Database.createConnection(EnumSet.of(READ_WRITE))) {
+            if (options.shouldClearDb()) {
+                Database.clearDb(connection);
             }
+            Database.initDb(connection);
+            connection.commit();
+        } catch (SQLException e) {
+            LOG.fatal("Error initializing database!", e);
         }
         URI uri = options.getRedisUri();
         this.eventQueue = new LinkedBlockingQueue<>();
@@ -163,6 +164,14 @@ public final class Processor implements Runnable {
                 LOG.error("Error in rollback after previous error", e2);
             }
             return false;
+        } finally {
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    LOG.error("Error while closing connection", e);
+                }
+            }
         }
     }
 
@@ -189,6 +198,14 @@ public final class Processor implements Runnable {
                 }
             } catch (SQLException e2) {
                 LOG.error("Error in rollback after previous error", e2);
+            }
+        } finally {
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    LOG.error("Error while closing connection", e);
+                }
             }
         }
     }
@@ -291,6 +308,10 @@ public final class Processor implements Runnable {
                 } catch (SQLException e) {
                     if (connection != null) connection.rollback();
                     throw e;
+                } finally {
+                    if (connection != null) {
+                        connection.close();
+                    }
                 }
             }
             Jedis subJedis = JedisHelper.get(uri);
@@ -378,6 +399,14 @@ public final class Processor implements Runnable {
                 LOG.error("Error in rollback after previous error!", e2);
             }
             // TODO(Roel): Reschedule event!
+        } finally {
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    LOG.error("Error while closing connection", e);
+                }
+            }
         }
     }
 

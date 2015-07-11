@@ -141,28 +141,42 @@ public class TestWithRedis {
         selfTest();
     }
 
+    private static Connection globalConnection;
+
     @BeforeClass
-    public static void createDb() throws Exception {
+    public static void configDb() throws Exception {
         Database.setDatabaseURI(URI.create(connectionURI));
-        Connection connection = Database.createConnection(EnumSet.of(READ_WRITE));
-        Database.initDb(connection);
-        connection.commit();
+        if (connectionURI.startsWith("jdbc:h2")) {
+            globalConnection = Database.createConnection(EnumSet.of(READ_WRITE));
+        }
+        try (Connection connection = Database.createConnection(EnumSet.of(READ_WRITE))) {
+            Database.clearDb(connection);
+            Database.initDb(connection);
+            connection.commit();
+        }
+    }
+
+    @AfterClass
+    public static void closeConnection() throws Exception {
+        if (globalConnection != null) {
+            globalConnection.close();
+        }
     }
 
     @Before
     public void clearDb() throws Exception {
-        List<String> statements = Arrays.asList(
-                "DELETE FROM \"snapshots\"",
-                "DELETE FROM \"tagSeenEvents\"",
-                "DELETE FROM \"events\""
-        );
-        Connection connection = Database.createConnection(EnumSet.of(READ_WRITE));
-        for (String statement : statements) {
+        try (Connection connection = Database.createConnection(EnumSet.of(READ_WRITE))) {
             try (Statement stmt = connection.createStatement()) {
-                stmt.execute(statement);
+                stmt.execute("DELETE FROM \"snapshots\"");
             }
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("DELETE FROM \"tagSeenEvents\"");
+            }
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("DELETE FROM \"events\"");
+            }
+            connection.commit();
         }
-        connection.commit();
     }
 
     public static void selfTest() throws Exception {
@@ -283,14 +297,15 @@ public class TestWithRedis {
         CommandDispatcher.Result result = dispatcher.send(
                 new AddTagCommand(new TagId("abcd"), 0));
         assertThat(result, equalTo(CommandDispatcher.Result.SUCCESS));
-        Connection connection = Database.createConnection(EnumSet.of(READ_ONLY));
-        Optional<Snapshot> snapshot = Snapshot.loadLatest(connection);
-        assertThat(snapshot.isPresent(), equalTo(true));
-        assertThat(snapshot.get().getTeamTagMap().tagToTeam("abcd").get(), equalTo(0));
-        try (Statement statement = connection.createStatement()) {
-            ResultSet rs = statement.executeQuery("SELECT count(*) FROM \"snapshots\"");
-            rs.next();
-            assertThat(rs.getLong(1), equalTo(1L));
+        try (Connection connection = Database.createConnection(EnumSet.of(READ_ONLY))) {
+            Optional<Snapshot> snapshot = Snapshot.loadLatest(connection);
+            assertThat(snapshot.isPresent(), equalTo(true));
+            assertThat(snapshot.get().getTeamTagMap().tagToTeam("abcd").get(), equalTo(0));
+            try (Statement statement = connection.createStatement()) {
+                ResultSet rs = statement.executeQuery("SELECT count(*) FROM \"snapshots\"");
+                rs.next();
+                assertThat(rs.getLong(1), equalTo(1L));
+            }
         }
     }
 
@@ -301,14 +316,15 @@ public class TestWithRedis {
         CommandDispatcher.Result result = dispatcher.send(
                 new SetStartTimeCommand(Instant.EPOCH));
         assertThat(result, equalTo(CommandDispatcher.Result.SUCCESS));
-        Connection connection = Database.createConnection(EnumSet.of(READ_ONLY));
-        Optional<Snapshot> latestSnapshot = Snapshot.loadLatest(connection);
-        assertThat(latestSnapshot.isPresent(), equalTo(true));
-        assertThat(latestSnapshot.get().getStartTime(), equalTo(Instant.EPOCH));
-        try (Statement stmt = connection.createStatement()) {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM \"snapshots\"");
-            rs.next();
-            assertThat(rs.getLong(1), equalTo(1L));
+        try (Connection connection = Database.createConnection(EnumSet.of(READ_ONLY))) {
+            Optional<Snapshot> latestSnapshot = Snapshot.loadLatest(connection);
+            assertThat(latestSnapshot.isPresent(), equalTo(true));
+            assertThat(latestSnapshot.get().getStartTime(), equalTo(Instant.EPOCH));
+            try (Statement stmt = connection.createStatement()) {
+                ResultSet rs = stmt.executeQuery("SELECT count(*) FROM \"snapshots\"");
+                rs.next();
+                assertThat(rs.getLong(1), equalTo(1L));
+            }
         }
     }
 
@@ -319,14 +335,15 @@ public class TestWithRedis {
         CommandDispatcher.Result result = dispatcher.send(
                 new SetEndTimeCommand(Instant.EPOCH));
         assertThat(result, equalTo(CommandDispatcher.Result.SUCCESS));
-        Connection connection = Database.createConnection(EnumSet.of(READ_ONLY));
-        Optional<Snapshot> latestSnapshot = Snapshot.loadLatest(connection);
-        assertThat(latestSnapshot.isPresent(), equalTo(true));
-        assertThat(latestSnapshot.get().getEndTime(), equalTo(Instant.EPOCH));
-        try (Statement stmt = connection.createStatement()) {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM \"snapshots\"");
-            rs.next();
-            assertThat(rs.getLong(1), equalTo(1L));
+        try (Connection connection = Database.createConnection(EnumSet.of(READ_ONLY))) {
+            Optional<Snapshot> latestSnapshot = Snapshot.loadLatest(connection);
+            assertThat(latestSnapshot.isPresent(), equalTo(true));
+            assertThat(latestSnapshot.get().getEndTime(), equalTo(Instant.EPOCH));
+            try (Statement stmt = connection.createStatement()) {
+                ResultSet rs = stmt.executeQuery("SELECT count(*) FROM \"snapshots\"");
+                rs.next();
+                assertThat(rs.getLong(1), equalTo(1L));
+            }
         }
     }
 
@@ -362,12 +379,13 @@ public class TestWithRedis {
         waitForSnapshot();
         readerJedis.close();
         assertThat(semaphore.availablePermits(), equalTo(0));
-        Connection connection = Database.createConnection(EnumSet.of(READ_ONLY));
-        Optional<Snapshot> snapshot = Snapshot.loadLatest(connection);
-        assertThat(snapshot.isPresent(), equalTo(true));
-        assertThat(snapshot.get().getTeamTagMap().tagToTeam("abcd").get(), equalTo(0));
-        assertThat(snapshot.get().getTeamStates().getStateForTeam(0).get().getTagFragmentCount(), equalTo(3));
-        assertThat(snapshot.get().getTeamStates().getNbLapsForTeam(0), equalTo(1));
+        try (Connection connection = Database.createConnection(EnumSet.of(READ_ONLY))) {
+            Optional<Snapshot> snapshot = Snapshot.loadLatest(connection);
+            assertThat(snapshot.isPresent(), equalTo(true));
+            assertThat(snapshot.get().getTeamTagMap().tagToTeam("abcd").get(), equalTo(0));
+            assertThat(snapshot.get().getTeamStates().getStateForTeam(0).get().getTagFragmentCount(), equalTo(3));
+            assertThat(snapshot.get().getTeamStates().getNbLapsForTeam(0), equalTo(1));
+        }
     }
 
     @Test
@@ -378,21 +396,22 @@ public class TestWithRedis {
         waitForSnapshot();
         dispatcher.send(new SetStartTimeCommand(Instant.EPOCH.plus(20, ChronoUnit.SECONDS)));
         waitForSnapshot();
-        Connection connection = Database.createConnection(EnumSet.of(READ_ONLY));
-        try (Statement stmt = connection.createStatement()) {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM \"snapshots\"");
-            rs.next();
-            assertThat(rs.getLong(1), equalTo(1L));
+        try (Connection connection = Database.createConnection(EnumSet.of(READ_ONLY))) {
+            try (Statement stmt = connection.createStatement()) {
+                ResultSet rs = stmt.executeQuery("SELECT count(*) FROM \"snapshots\"");
+                rs.next();
+                assertThat(rs.getLong(1), equalTo(1L));
+            }
+            try (Statement stmt = connection.createStatement()) {
+                ResultSet rs = stmt.executeQuery("SELECT count(*) FROM \"events\"");
+                rs.next();
+                assertThat(rs.getLong(1), equalTo(2L));
+            }
+            List<Event> events = Event.loadAll(connection);
+            assertThat(events.get(0).isRemoved(), equalTo(true));
+            Optional<Snapshot> snapshot = Snapshot.loadLatest(connection);
+            assertThat(snapshot.isPresent(), equalTo(true));
+            assertThat(snapshot.get().getStartTime(), equalTo(Instant.EPOCH.plus(20, ChronoUnit.SECONDS)));
         }
-        try (Statement stmt = connection.createStatement()) {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM \"events\"");
-            rs.next();
-            assertThat(rs.getLong(1), equalTo(2L));
-        }
-        List<Event> events = Event.loadAll(connection);
-        assertThat(events.get(0).isRemoved(), equalTo(true));
-        Optional<Snapshot> snapshot = Snapshot.loadLatest(connection);
-        assertThat(snapshot.isPresent(), equalTo(true));
-        assertThat(snapshot.get().getStartTime(), equalTo(Instant.EPOCH.plus(20, ChronoUnit.SECONDS)));
     }
 }

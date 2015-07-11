@@ -73,8 +73,8 @@ public class TestScore {
 
     @Test
     public void test24u2014() throws Exception {
-        Config.setCurrentConfig(Config.fromConfigurationFile(Paths.get("configs","24u2014.json")).get());
-        BufferedReader reader = Files.newBufferedReader(Paths.get("replays","24u2014","events.json"));
+        Config.setCurrentConfig(Config.fromConfigurationFile(Paths.get("..","configs","24u2014.json")).get());
+        BufferedReader reader = Files.newBufferedReader(Paths.get("..","replays","24u2014","events.json"));
         String line = reader.readLine();
         Snapshot snapshot = new Snapshot(Instant.EPOCH);
         for (Team team : Config.getCurrentConfig().getTeams()) {

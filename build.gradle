@@ -31,7 +31,7 @@ allprojects {
 }
 
 subprojects {
-    if (name == 'Processor' || name == 'Reader' || name == 'UI' || name == 'shared' || name == 'Replayer') {
+    if (['Processor','Reader','UI','shared','Replayer','Publisher'].contains(name)) {
         apply plugin: 'java'
 
         sourceCompatibility = '1.8'

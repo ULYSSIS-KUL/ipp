@@ -54,10 +54,12 @@ public final class CorrectionEvent extends Event {
         this.correction = correction;
     }
 
+    @SuppressWarnings("unused")
     public int getTeamNb() {
         return teamNb;
     }
 
+    @SuppressWarnings("unused")
     public int getCorrection() {
         return correction;
     }

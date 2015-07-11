@@ -48,6 +48,17 @@ public class TestTeamTagMap {
     }
 
     @Test
+    public void testRemoveNonExistentTag() throws Exception {
+        TeamTagMap ttm = new TeamTagMap();
+        ttm = ttm.removeTag("BCDE");
+        assertThat(ttm.tagToTeam("BCDE"), equalTo(Optional.empty()));
+        ttm = ttm.addTagToTeam("ABCD", 0);
+        ttm = ttm.addTagToTeam("EFDF", 1);
+        ttm = ttm.removeTag("BCDE");
+        assertThat(ttm.tagToTeam("BCDE"), equalTo(Optional.empty()));
+    }
+
+    @Test
     public void testLoadFromJackson() throws Exception {
         String myJson = "{\"2\":[\"ABCDEF\"],\"4\":[\"FEDCEB\"]}";
         TeamTagMap result = Serialization.getJsonMapper().readValue(myJson, TeamTagMap.class);

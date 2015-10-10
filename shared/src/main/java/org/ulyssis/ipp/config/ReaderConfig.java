@@ -72,10 +72,6 @@ public class ReaderConfig {
     private ReaderConfig() {
     }
 
-    public ReaderConfig(URI uri) {
-        this.uri = uri;
-    }
-
     public URI getURI() {
         return uri;
     }

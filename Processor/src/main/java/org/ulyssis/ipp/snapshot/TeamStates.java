@@ -55,7 +55,7 @@ public final class TeamStates {
     }
 
     public int getNbLapsForTeam(int teamNb) {
-        return getStateForTeam(teamNb).map(state -> state.getNbLaps()).orElse(0);
+        return getStateForTeam(teamNb).map(TeamState::getNbLaps).orElse(0);
     }
 
     @JsonValue

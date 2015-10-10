@@ -2,15 +2,15 @@
     "trackLength" : 520,
     "readers" : [
         {
-            "uri" : "redis://10.13.37.10",
+            "uri" : "redis://10.13.37.10/0",
             "position" : 0.0
         },
         {
-            "uri" : "redis://10.13.37.11",
+            "uri" : "redis://10.13.37.10/1",
             "position" : 195
         },
         {
-            "uri" : "redis://10.13.37.12",
+            "uri" : "redis://10.13.37.10/2",
             "position" : 317
         }
     ],

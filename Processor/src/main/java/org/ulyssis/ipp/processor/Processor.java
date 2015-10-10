@@ -381,7 +381,7 @@ public final class Processor implements Runnable {
                     snapshotToUpdateFrom.save(connection);
                 }
             }
-            LOG.debug("Updated up to snapshot: {}", snapshotToUpdateFrom.getId());
+            LOG.debug("Updated up to snapshot: {}", snapshotToUpdateFrom.getId().get());
             this.snapshot = snapshotToUpdateFrom;
             connection.commit();
             // TODO: Provide a sensible message for NEW_SNAPSHOT?

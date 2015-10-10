@@ -8,16 +8,19 @@ Vagrant.configure(2) do |config|
     config.vm.define "reader-#{i}" do |node|
       node.vm.network 'forwarded_port', guest: 6379, host: 6379 + i
       node.vm.network 'private_network', ip: "10.13.37.#{10 + i - 1}"
+      node.vm.hostname = "ipp-reader-#{i}"
     end
-    config.vm.define 'processor' do |node|
-      node.vm.network 'forwarded_port', guest: 6379, host: 6378
-      node.vm.network 'forwarded_port', guest: 5432, host: 65432
-      node.vm.network 'private_network', ip: '10.13.37.20'
-    end
-    config.vm.define 'ui' do |node|
-      node.vm.network 'forwarded_port', guest: 8080, host: 8080
-      node.vm.network 'private_network', ip: '10.13.37.21'
-    end
+  end
+  config.vm.define 'processor' do |node|
+    node.vm.network 'forwarded_port', guest: 6379, host: 6378
+    node.vm.network 'forwarded_port', guest: 5432, host: 65432
+    node.vm.network 'private_network', ip: '10.13.37.20'
+    node.vm.hostname = 'ipp-processor'
+  end
+  config.vm.define 'ui' do |node|
+    node.vm.network 'forwarded_port', guest: 8080, host: 8080
+    node.vm.network 'private_network', ip: '10.13.37.21'
+    node.vm.hostname = 'ipp-ui'
   end
 
   config.vm.provision 'ansible' do |ansible|

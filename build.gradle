@@ -5,7 +5,7 @@ defaultTasks 'updateSubmodules', 'lib/jwt:dist', 'check', 'installDist', 'war', 
 
 buildscript {
     repositories {
-        mavenCentral()
+        jcenter()
     }
 
     dependencies {

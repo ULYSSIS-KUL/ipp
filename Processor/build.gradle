@@ -3,7 +3,7 @@ apply plugin: 'application'
 mainClassName = 'org.ulyssis.ipp.processor.Main'
 
 repositories {
-    mavenCentral()
+    jcenter()
 }
 
 dependencies {

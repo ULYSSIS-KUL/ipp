@@ -3,10 +3,14 @@ apply plugin: 'application'
 mainClassName = 'org.ulyssis.ipp.publisher.Main'
 
 repositories {
-    mavenCentral()
+    jcenter()
 }
 
 dependencies {
     compile project(':shared')
     compile project(':Processor')
+
+    compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.1'
+    compile (group: 'sabina', name: 'http', version: '1.3.3') { transitive = false }
+    compile group: 'io.undertow', name: 'undertow-servlet', version: '1.2.8.Final'
 }

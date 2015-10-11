@@ -57,10 +57,23 @@ public class Options {
         return "Executable";
     }
 
-    protected Optional<Options> doFromArgs(String[] args) {
+    protected static abstract class ExtraCondition {
+        protected String message;
+        public abstract boolean evaluate(Options options);
+    }
+
+    protected final Optional<Options> doFromArgs(String[] args, ExtraCondition... conditions) {
         CmdLineParser parser = new CmdLineParser(this);
         try {
             parser.parseArgument(args);
+            for (ExtraCondition condition : conditions) {
+                if (!condition.evaluate(this)) {
+                    System.err.println(condition.message);
+                    System.err.printf("Usage: %s [options]\n", getExecName());
+                    parser.printUsage(System.err);
+                    return Optional.empty();
+                }
+            }
             if (showUsage) {
                 System.err.printf("Usage: %s [options]\n", getExecName());
                 parser.printUsage(System.err);

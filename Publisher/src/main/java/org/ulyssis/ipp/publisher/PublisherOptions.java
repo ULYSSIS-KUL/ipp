@@ -31,6 +31,11 @@ import java.util.Optional;
 public final class PublisherOptions extends Options {
     private static final Logger LOG = LogManager.getLogger(PublisherOptions.class);
 
+    public enum Source {
+        HTTP,
+        DATABASE
+    }
+
     @Option(name="-r", usage="The URI of the Redis server to use, defaults to redis://localhost", aliases="--redis", metaVar="<redis URI>")
     private URI redisUri;
     {
@@ -41,21 +46,52 @@ public final class PublisherOptions extends Options {
         }
     }
 
-    @Option(name="--database", usage="The database to retrieve the latest snapshot from", metaVar="<uri>", required=true)
-    private URI databaseUri;
+    @Option(name="--database", usage="The database to retrieve the latest snapshot from", metaVar="<uri>", required=false)
+    private URI databaseUri = null;
 
-    @Option(name="-o", usage="The file to write the score to", aliases={"--out", "--output"}, metaVar="<output>", required=true)
-    private Path outputFile;
+    @Option(name="-p", usage="The port to listen on", aliases={"--port"}, metaVar="<port>", required=false)
+    private Integer port = null;
+
+    @Option(name="-o", usage="The file to write the score to", aliases={"--out", "--output"}, metaVar="<output>", required=false)
+    private Path outputFile = null;
 
     @Option(name="--http", usage="The HTTP host to push the score to", metaVar="<uri>", required=false)
     private URL http = null;
 
+    private static final ExtraCondition condition = new ExtraCondition() {
+        @Override
+        public boolean evaluate(Options options) {
+            PublisherOptions pOptions = (PublisherOptions)options;
+            if (pOptions.getOutputFile() == null && pOptions.getHttp() == null) {
+                message = "You must specify either an output file or a http URL (or both)";
+                return false;
+            }
+            if (pOptions.getDatabaseUri() == null && pOptions.getPort() == null) {
+                message = "You must specify either a database URI or a port to listen on";
+                return false;
+            }
+            if (pOptions.getDatabaseUri() != null && pOptions.getPort() != null) {
+                message = "You can not both connect to a database, and listen on a port, choose one!";
+                return false;
+            }
+            return true;
+        }
+    };
+
     public static Optional<PublisherOptions> publisherOptionsFromArgs(String[] args) {
-        Optional<Options> options = (new PublisherOptions().doFromArgs(args));
+        Optional<Options> options = (new PublisherOptions().doFromArgs(args, condition));
         if (options.isPresent()) {
             return Optional.of((PublisherOptions) options.get());
         } else {
             return Optional.empty();
+        }
+    }
+
+    public Source getSource() {
+        if (http != null) {
+            return Source.HTTP;
+        } else {
+            return Source.DATABASE;
         }
     }
 
@@ -65,6 +101,10 @@ public final class PublisherOptions extends Options {
 
     public URI getDatabaseUri() {
         return databaseUri;
+    }
+
+    public Integer getPort() {
+        return port;
     }
 
     public Path getOutputFile() {

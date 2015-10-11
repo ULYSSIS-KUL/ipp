@@ -3,7 +3,7 @@ apply plugin: 'application'
 mainClassName = 'org.ulyssis.ipp.reader.Main'
 
 repositories {
-    mavenCentral()
+    jcenter()
 
     maven {
         url 'https://oss.sonatype.org/content/repositories/releases/'

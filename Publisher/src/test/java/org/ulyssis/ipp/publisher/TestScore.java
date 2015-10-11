@@ -31,10 +31,7 @@ import java.io.BufferedReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.SortedSet;
+import java.util.*;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -89,7 +86,7 @@ public class TestScore {
         }
         Score score = new Score(snapshot, true);
         assertThat(score.getStatus(), equalTo(Status.FinalScore));
-        SortedSet<Score.Team> teams = score.getTeams();
+        Collection<Score.Team> teams = score.getTeams();
         List<Score.Team> t = new ArrayList<>(teams);
         assertThat(t.size(), equalTo(18));
         for (int i = 0; i < t.size(); ++i) {

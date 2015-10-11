@@ -58,6 +58,18 @@ public final class PublisherOptions extends Options {
     @Option(name="--http", usage="The HTTP host to push the score to", metaVar="<uri>", required=false)
     private URL http = null;
 
+    @Option(name="--keystore", usage="The keystore to use (for HTTP server or client)", metaVar="<keystore>", required=false)
+    private Path keystore = null;
+
+    @Option(name="--keystore-pass", usage="The keystore password (for HTTP server or client)", metaVar="<pass>", required=false)
+    private String keystorePass = null;
+
+    @Option(name="--truststore", usage="The truststore to use (for HTTP server or client)", metaVar="<truststore>", required=false)
+    private Path truststore = null;
+
+    @Option(name="--truststore-pass", usage="The truststore password (for HTTP server or client)", metaVar="<pass>", required=false)
+    private String truststorePass = null;
+
     private static final ExtraCondition condition = new ExtraCondition() {
         @Override
         public boolean evaluate(Options options) {
@@ -88,7 +100,7 @@ public final class PublisherOptions extends Options {
     }
 
     public Source getSource() {
-        if (http != null) {
+        if (port != null) {
             return Source.HTTP;
         } else {
             return Source.DATABASE;
@@ -113,5 +125,21 @@ public final class PublisherOptions extends Options {
 
     public URL getHttp() {
         return http;
+    }
+
+    public Optional<Path> getKeystore() {
+        return Optional.ofNullable(keystore);
+    }
+
+    public String getKeystorePass() {
+        return keystorePass;
+    }
+
+    public Optional<Path> getTruststore() {
+        return Optional.ofNullable(truststore);
+    }
+
+    public String getTruststorePass() {
+        return truststorePass;
     }
 }

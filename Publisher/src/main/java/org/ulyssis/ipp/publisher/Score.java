@@ -17,6 +17,8 @@
  */
 package org.ulyssis.ipp.publisher;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.snapshot.Snapshot;
 import org.ulyssis.ipp.snapshot.TeamState;
@@ -28,9 +30,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Optional;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 public final class Score {
     private final long time; // Time
@@ -38,10 +38,11 @@ public final class Score {
     private final int update; // Update frequency in ms
     private final Status status;
     private final String message;
-    private final SortedSet<Team> teams; // The teams, sorted by score
+    private final Collection<Team> teams; // The teams, sorted by score
 
-    @JsonIgnoreProperties({"nonLimitedPosition"})
-    public final class Team implements Comparable<Team> {
+    @JsonIgnoreProperties({"nonLimitedPosition","lap"})
+    public static final class Team implements Comparable<Team> {
+        private final double lap;
         private final int nb; // The team number
         private final String name; // The name of the team
         private final int laps; // The number of laps
@@ -50,7 +51,17 @@ public final class Score {
 
         private final double nonLimitedPosition; // The predicted position, not limited
 
-        public Team(int nb, String name, int laps, double position, double nonLimitedPosition, double speed) {
+        @JsonCreator
+        public Team(@JsonProperty("nb") int nb,
+                    @JsonProperty("name") String name,
+                    @JsonProperty("laps") int laps,
+                    @JsonProperty("position") double position,
+                    @JsonProperty("speed") double speed) {
+            this(Double.NaN, nb, name, laps, position, Double.NaN, speed);
+        }
+
+        public Team(double lap, int nb, String name, int laps, double position, double nonLimitedPosition, double speed) {
+            this.lap = lap;
             this.nb = nb;
             this.name = name;
             this.laps = laps;
@@ -90,8 +101,8 @@ public final class Score {
         	} else if (this.laps > other.laps) {
         		return -1;
         	}
-            double thisDistance = (this.laps + nonLimitedPosition) * Score.this.lap;
-            double otherDistance = (other.laps + other.nonLimitedPosition) * Score.this.lap;
+            double thisDistance = (this.laps + nonLimitedPosition) * lap;
+            double otherDistance = (other.laps + other.nonLimitedPosition) * lap;
             if (thisDistance < otherDistance) {
                 return 1;
             } else if (thisDistance > otherDistance) {
@@ -101,7 +112,22 @@ public final class Score {
             }
         }
     }
-    
+
+    @JsonCreator
+    public Score(@JsonProperty("time") long time,
+                 @JsonProperty("lap") double lap,
+                 @JsonProperty("update") int update,
+                 @JsonProperty("status") Status status,
+                 @JsonProperty("message") String message,
+                 @JsonProperty("teams") List<Team> teams) {
+        this.time = time;
+        this.lap = lap;
+        this.update = update;
+        this.status = status;
+        this.message = message;
+        this.teams = teams;
+    }
+
     public Score(Snapshot snapshot) {
     	this(snapshot, true);
     }
@@ -122,7 +148,7 @@ public final class Score {
                 TeamState t = teamState.get();
                 double speed = t.getPredictedSpeed();
                 if (Double.isNaN(speed)) {
-                    teams.add(new Team(team.getTeamNb(), team.getName(), 0, 0, 0, 0));
+                    teams.add(new Team(lap, team.getTeamNb(), team.getName(), 0, 0, 0, 0));
                 } else {
                     TagSeenEvent lastEvent = t.getLastTagSeenEvent().get();
                     Instant lastTime = t.getLastTagSeenEvent().get().getTime();
@@ -131,11 +157,11 @@ public final class Score {
                     double nonLimitedPosition = previousReaderPosition + elapsedSeconds * speed;
                     double position = nonLimitedPosition;
                     if (position > config.getTrackLength()) position = config.getTrackLength();
-                    teams.add(new Team(team.getTeamNb(), team.getName(), t.getNbLaps(),
+                    teams.add(new Team(lap, team.getTeamNb(), team.getName(), t.getNbLaps(),
                             position / config.getTrackLength(), nonLimitedPosition / config.getTrackLength(), speed));
                 }
             } else {
-                teams.add(new Team(team.getTeamNb(), team.getName(), 0, 0, 0, 0));
+                teams.add(new Team(lap, team.getTeamNb(), team.getName(), 0, 0, 0, 0));
             }
         }
     }
@@ -160,7 +186,7 @@ public final class Score {
         return message;
     }
 
-    public SortedSet<Team> getTeams() {
+    public Collection<Team> getTeams() {
         return teams;
     }
 }

@@ -25,7 +25,7 @@ public interface ScoreOutput {
     static List<ScoreOutput> outputsFromOptions(PublisherOptions options) {
         List<ScoreOutput> result = new ArrayList<>();
         if (options.getHttp() != null) {
-            result.add(new HttpOutput());
+            result.add(new HttpOutput(options));
         }
         if (options.getOutputFile() != null) {
             result.add(new FileOutput(options.getOutputFile()));

@@ -17,10 +17,16 @@
  */
 package org.ulyssis.ipp.publisher;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.runtime.Runner;
 
 public final class Main {
+    private static final Logger LOG = LogManager.getLogger(Main.class);
+
+    private Main() {}
+
     public static void main(String[] args) {
         Runner runner = new Runner();
         try {
@@ -28,8 +34,10 @@ public final class Main {
                 Config.fromConfigurationFile(options.getConfigFile()).ifPresent(config -> {
                     Config.setCurrentConfig(config);
                     if (options.getSource() == PublisherOptions.Source.HTTP) {
+                        LOG.info("Creating HttpServerPublisher");
                         runner.addRunnable(new HttpServerPublisher(options));
                     } else {
+                        LOG.info("Creating DatabasePublisher");
                         runner.addRunnable(new DatabasePublisher(options));
                     }
                     runner.run();

@@ -80,7 +80,9 @@ public final class HttpServerPublisher extends Publisher implements Runnable {
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Content-Type"), "text/plain");
             if (exchange.getRequestMethod().equalToString("GET")) {
-                LOG.info("Authenticated: {}", exchange.getSecurityContext().isAuthenticated());
+                if (exchange.getSecurityContext() != null) {
+                    LOG.info("Authenticated: {}", exchange.getSecurityContext().isAuthenticated());
+                }
                 exchange.setResponseCode(200);
                 exchange.getResponseSender().send("Howdy!");
             } else {

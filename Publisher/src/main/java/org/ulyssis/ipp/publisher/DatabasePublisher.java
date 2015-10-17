@@ -37,6 +37,7 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -51,6 +52,8 @@ public final class DatabasePublisher extends Publisher implements Runnable {
     private final PublisherOptions options;
     private final JedisHelper.BinaryCallBackPubSub pubSub;
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+
+    private final Semaphore semaphore = new Semaphore(0);
 
     private Instant lastUpdateTime = Instant.EPOCH;
 
@@ -74,18 +77,10 @@ public final class DatabasePublisher extends Publisher implements Runnable {
     }
 
     private void publishLatestScore(boolean repeat) {
-        try {
-            Instant updateTime = Instant.now();
-            if (repeat && Duration.between(lastUpdateTime, updateTime).toMillis() < MS_BETWEEN_REPEATS / 2) return;
-            lastUpdateTime = updateTime;
-            try (Connection connection = Database.createConnection(EnumSet.of(Database.ConnectionFlags.READ_ONLY))) {
-                Snapshot.loadLatest(connection).ifPresent(snapshot -> outputScore(new Score(snapshot, true)));
-            }
-        } catch (SQLException e) {
-            LOG.error("Failed to fetch snapshot", e);
-        } catch (IOException e) {
-            LOG.error("Failed to process snapshot", e);
-        }
+        Instant updateTime = Instant.now();
+        if (repeat && Duration.between(lastUpdateTime, updateTime).toMillis() < MS_BETWEEN_REPEATS / 2) return;
+        lastUpdateTime = updateTime;
+        semaphore.release();
     }
 
     public DatabasePublisher(PublisherOptions options) {
@@ -120,7 +115,15 @@ public final class DatabasePublisher extends Publisher implements Runnable {
             thread.start();
             try {
                 while (!Thread.currentThread().isInterrupted()) {
-                    Thread.sleep(10L);
+                    semaphore.acquire();
+                    semaphore.drainPermits();
+                    try (Connection connection = Database.createConnection(EnumSet.of(Database.ConnectionFlags.READ_ONLY))) {
+                        Snapshot.loadLatest(connection).ifPresent(snapshot -> outputScore(new Score(snapshot, true)));
+                    } catch (SQLException e) {
+                        LOG.error("Failed to fetch snapshot", e);
+                    } catch (IOException e) {
+                        LOG.error("Failed to process snapshot", e);
+                    }
                 }
             } catch (InterruptedException ignored) {}
             thread.interrupt();

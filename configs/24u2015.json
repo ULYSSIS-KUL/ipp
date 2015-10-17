@@ -1,0 +1,104 @@
+{
+    "trackLength" : 520,
+	"speedwayURIs": [
+		"tcp://192.168.0.1",
+		"tcp://192.168.0.2",
+                "tcp://192.168.0.3"
+	],
+    "readers" : [
+        {
+            "uri" : "redis://192.168.0.10",
+            "position" : 0.0
+        },
+        {
+            "uri" : "redis://192.168.0.11",
+            "position" : 195
+        },
+        {
+            "uri": "redis://192.168.0.12",
+            "position": 317
+        }
+    ],
+    "teams" : [
+        {
+            "teamNb": 1,
+            "name": "Apolloon",
+            "tags": ["002420150001"]
+        },
+        {
+            "teamNb": 2,
+            "name": "Ekonomika",
+            "tags": ["002420150002"]
+        },
+        {
+            "teamNb": 3,
+            "name": "LBK",
+            "tags": ["002420150003"]
+        },
+        {
+            "teamNb": 4,
+            "name": "VTK",
+            "tags": ["002420150004"]
+        },
+        {
+            "teamNb": 5,
+            "name": "Wina",
+            "tags": ["002420150005"]
+        },
+        {
+            "teamNb": 7,
+            "name": "Pyschologische kring",
+            "tags": ["002420150007"]
+        },
+        {
+            "teamNb": 9,
+            "name": "Atmosphere",
+            "tags": ["002420150009"]
+        },
+        {
+            "teamNb": 10,
+            "name": "4 Speed",
+            "tags": ["002420150010"]
+        },
+        {
+            "teamNb": 11,
+            "name": "Industria",
+            "tags": ["002420150011"]
+        },
+        {
+            "teamNb": 12,
+            "name": "Oker",
+            "tags": ["002420150012"]
+        },
+        {
+            "teamNb": 13,
+            "name": "VRG",
+            "tags": ["002420150013"]
+        },
+        {
+            "teamNb": 14,
+            "name": "Politika",
+            "tags": ["002420150014"]
+        },
+        {
+            "teamNb": 15,
+            "name": "Run for Specials",
+            "tags": ["002420150015"]
+        },
+        {
+            "teamNb": 16,
+            "name": "Medica",
+            "tags": ["002420150016"]
+        },
+        {
+            "teamNb": 17,
+            "naam": "Pedal & Hesteria",
+            "tags": ["002420150017"]
+        },
+        {
+            "teamNb": 18,
+            "naam": "Lerkeveld",
+            "tags": ["02420150018"]
+        }
+    ]
+}

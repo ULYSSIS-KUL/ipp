@@ -5,6 +5,7 @@
 		Time: ${current-time} <br />
 		Start date: ${start-date} <br />
 		Start time: ${start-time}
+        <div class="right-float">${show-results}</div>
 	</message>
     <message id="collapsable-panel">
     	${bar}

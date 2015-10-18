@@ -17,8 +17,19 @@
  */
 package org.ulyssis.ipp.ui.widgets;
 
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Optional;
 
+import eu.webtoolkit.jwt.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ulyssis.ipp.processor.Database;
 import org.ulyssis.ipp.publisher.Score;
 import org.ulyssis.ipp.snapshot.Snapshot;
 import org.ulyssis.ipp.ui.TimeUtils;
@@ -26,11 +37,9 @@ import org.ulyssis.ipp.ui.UIApplication;
 import org.ulyssis.ipp.ui.state.SharedState;
 import org.ulyssis.ipp.ui.state.SharedState.SnapshotScoreListener;
 
-import eu.webtoolkit.jwt.WContainerWidget;
-import eu.webtoolkit.jwt.WString;
-import eu.webtoolkit.jwt.WTemplate;
-
 public class HeaderWidget extends WTemplate {
+    private final Logger LOG = LogManager.getLogger(HeaderWidget.class);
+
 	private final SnapshotScoreListener onNewSnapshot = this::newSnapshot;
 	private void newSnapshot(Snapshot snapshot, Score score, boolean newSnapshot) {
 		Instant now = Instant.now();
@@ -58,5 +67,41 @@ public class HeaderWidget extends WTemplate {
 		
 		bindEmpty("start-date");
 		bindEmpty("start-time");
+
+		final WPushButton showResultsButton = new WPushButton("Show results");
+		bindWidget("show-results", showResultsButton);
+		showResultsButton.clicked().addListener(this, new Signal1.Listener<WMouseEvent>() {
+			@Override
+			public void trigger(WMouseEvent wMouseEvent) {
+                try (Connection connection = Database.createConnection(EnumSet.of(Database.ConnectionFlags.READ_ONLY))) {
+                    Optional<Snapshot> snapshot = Snapshot.loadLatest(connection);
+                    final WDialog dialog = new WDialog("Results");
+                    dialog.setClosable(true);
+                    if (snapshot.isPresent()) {
+                        Score score = new Score(snapshot.get(), false);
+                        WTable table = new WTable(dialog.getContents());
+                        table.setStyleClass("results-table");
+                        List<Score.Team> teams = new ArrayList<>(score.getTeams());
+                        int pos = 1;
+                        table.setHeaderCount(1);
+                        table.getElementAt(0, 0).addWidget(new WText("Position"));
+                        table.getElementAt(0, 1).addWidget(new WText("Team name"));
+                        table.getElementAt(0, 2).addWidget(new WText("Lap count"));
+                        for (int i = 0; i < teams.size(); ++i) {
+                            Score.Team team = teams.get(i);
+                            table.getElementAt(i+1, 0).addWidget(new WText(String.valueOf(pos)));
+                            table.getElementAt(i+1, 1).addWidget(new WText(team.getName()));
+                            table.getElementAt(i+1, 2).addWidget(new WText(String.valueOf(team.getLaps())));
+                            pos ++;
+                        }
+                    } else {
+                        new WText("No results yet", dialog.getContents());
+                    }
+                    dialog.show();
+                } catch (SQLException | IOException e) {
+                    LOG.error("An exception occurred while getting the latest snapshot", e);
+                }
+            }
+		});
 	}
 }

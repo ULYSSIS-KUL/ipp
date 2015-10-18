@@ -152,3 +152,7 @@ body {
     float: right;
     font-weight: bold;
 }
+
+.right-float {
+    float: right;
+}

@@ -55,6 +55,7 @@ public final class Replayer implements Runnable {
         System.out.println("Press any key to continue (or ctrl-C to cancel)");
         try {
             System.in.read();
+            System.out.println("Started replay!");
             for (Map.Entry<Integer, Path> entry : replayMap.entrySet()) {
                 replays.add(new SingleReaderReplay(entry.getKey(), entry.getValue()));
             }

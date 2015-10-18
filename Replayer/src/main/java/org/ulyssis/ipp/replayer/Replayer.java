@@ -12,6 +12,8 @@ import redis.clients.jedis.Response;
 import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -21,12 +23,16 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * The replayer replays logs, the Redis database it pushes to is determined by
+ * the given Redis database and the reader id.
+ */
 public final class Replayer implements Runnable {
     private static final Logger LOG = LogManager.getLogger(Replayer.class);
     private final ReplayerOptions options;
-    private final Jedis jedis; // TODO: Individual Jedis for each reader? Or not?
-    private final String updateChannel;
-    private long updateCount = 0;
+    private final Map<Integer, Jedis> jedis = new HashMap<>();
+    private final Map<Integer, String> updateChannel = new HashMap<>();
+    private final Map<Integer, Long> updateCount = new HashMap<>();
 
     private final ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
 
@@ -34,9 +40,23 @@ public final class Replayer implements Runnable {
 
     public Replayer(ReplayerOptions options) {
         this.options = options;
-        this.jedis = JedisHelper.get(options.getRedisURI());
-        this.updateChannel =
-                JedisHelper.dbLocalChannel(Config.getCurrentConfig().getUpdateChannel(), options.getRedisURI());
+        for (int i : options.getReplayMap().keySet()) {
+            try {
+                URI uri = new URI(
+                        options.getRedisURI().getScheme(),
+                        options.getRedisURI().getUserInfo(),
+                        options.getRedisURI().getHost(),
+                        options.getRedisURI().getPort(),
+                        "/" + i,
+                        options.getRedisURI().getQuery(),
+                        options.getRedisURI().getFragment());
+                jedis.put(i, JedisHelper.get(uri));
+                updateChannel.put(i, JedisHelper.dbLocalChannel(Config.getCurrentConfig().getUpdateChannel(), uri));
+                updateCount.put(i, 0L);
+            } catch (URISyntaxException e) {
+                LOG.fatal("The syntax of the URI should be correct by now!", e);
+            }
+        }
     }
 
     @Override
@@ -106,11 +126,11 @@ public final class Replayer implements Runnable {
                     update.getReaderId(), update.getUpdateCount(), update.getTag());
             LOG.debug("JSON: {}", LOG.isDebugEnabled() ? Serialization.getJsonMapper().writeValueAsString(update) : null);
             try {
-                Transaction t = jedis.multi();
+                Transaction t = jedis.get(update.getReaderId()).multi();
                 Response<Long> nextUpdateCount = t.rpush("updates".getBytes(), updateBytes);
-                t.publish(updateChannel, String.valueOf(updateCount));
+                t.publish(updateChannel.get(update.getReaderId()), String.valueOf(updateCount.get(update.getReaderId())));
                 t.exec();
-                updateCount = nextUpdateCount.get();
+                updateCount.put(update.getReaderId(), nextUpdateCount.get());
             } catch (JedisConnectionException e) {
                 LOG.error("Error pushing update {} to Redis.", update.getUpdateCount(), e);
             }

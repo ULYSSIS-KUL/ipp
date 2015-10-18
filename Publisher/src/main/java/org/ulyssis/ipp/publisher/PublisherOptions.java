@@ -70,6 +70,9 @@ public final class PublisherOptions extends Options {
     @Option(name="--truststore-pass", usage="The truststore password (for HTTP server or client)", metaVar="<pass>", required=false)
     private String truststorePass = null;
 
+    @Option(name="--tmpdir", usage="The temporary directory to use", metaVar="<tmpdir>", required=false)
+    private Path tmpdir = null;
+
     private static final ExtraCondition condition = new ExtraCondition() {
         @Override
         public boolean evaluate(Options options) {
@@ -141,5 +144,9 @@ public final class PublisherOptions extends Options {
 
     public String getTruststorePass() {
         return truststorePass;
+    }
+
+    public Optional<Path> getTmpDir() {
+        return Optional.ofNullable(tmpdir);
     }
 }

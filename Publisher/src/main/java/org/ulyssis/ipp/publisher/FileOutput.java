@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Optional;
 import java.util.Set;
 
 public final class FileOutput implements ScoreOutput {
@@ -37,16 +38,22 @@ public final class FileOutput implements ScoreOutput {
     // TODO: Do these permissions work on Windows?
     private static final Set<PosixFilePermission> defaultPerms = PosixFilePermissions.fromString("rw-r--r--");
     private final Path filePath;
+    private final Optional<Path> tmpDir;
 
-    public FileOutput(Path filePath) {
+    public FileOutput(Path filePath, Optional<Path> tmpDir) {
         this.filePath = filePath;
+        this.tmpDir = tmpDir;
     }
 
     @Override
     public void outputScore(Score score) {
         Path tmpFile = null;
         try {
-            tmpFile = Files.createTempFile("score-", ".json", PosixFilePermissions.asFileAttribute(defaultPerms));
+            if (tmpDir.isPresent()) {
+                tmpFile = Files.createTempFile(tmpDir.get(), "score-", ".json", PosixFilePermissions.asFileAttribute(defaultPerms));
+            } else {
+                tmpFile = Files.createTempFile("score-", ".json", PosixFilePermissions.asFileAttribute(defaultPerms));
+            }
             BufferedWriter writer = Files.newBufferedWriter(tmpFile, StandardCharsets.UTF_8);
             Serialization.getJsonMapper().writer(new DefaultPrettyPrinter()).writeValue(writer, score);
             Files.move(tmpFile, filePath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);

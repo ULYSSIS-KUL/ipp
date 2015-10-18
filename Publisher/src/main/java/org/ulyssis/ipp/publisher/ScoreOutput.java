@@ -28,7 +28,7 @@ public interface ScoreOutput {
             result.add(new HttpOutput(options));
         }
         if (options.getOutputFile() != null) {
-            result.add(new FileOutput(options.getOutputFile()));
+            result.add(new FileOutput(options.getOutputFile(), options.getTmpDir()));
         }
         return Collections.unmodifiableList(result);
     }

@@ -82,17 +82,21 @@ public class HeaderWidget extends WTemplate {
                         WTable table = new WTable(dialog.getContents());
                         table.setStyleClass("results-table");
                         List<Score.Team> teams = new ArrayList<>(score.getTeams());
-                        int pos = 1;
                         table.setHeaderCount(1);
                         table.getElementAt(0, 0).addWidget(new WText("Position"));
                         table.getElementAt(0, 1).addWidget(new WText("Team name"));
                         table.getElementAt(0, 2).addWidget(new WText("Lap count"));
+                        int pos = 1;
                         for (int i = 0; i < teams.size(); ++i) {
                             Score.Team team = teams.get(i);
                             table.getElementAt(i+1, 0).addWidget(new WText(String.valueOf(pos)));
                             table.getElementAt(i+1, 1).addWidget(new WText(team.getName()));
                             table.getElementAt(i+1, 2).addWidget(new WText(String.valueOf(team.getLaps())));
-                            pos ++;
+                            if (i + 1 != teams.size()) {
+                                if (teams.get(i+1).getLaps() != team.getLaps()) {
+                                    pos = i + 2;
+                                }
+                            }
                         }
                     } else {
                         new WText("No results yet", dialog.getContents());

@@ -117,7 +117,6 @@ public class TeamPanel extends CollapsablePanel {
 		@Override
 		public int getRowCount(WModelIndex parent) {
 			int res = Math.max(0, events.size() - 1);
-            LOG.debug("Res: {}", res);
             return res;
 		}
 
@@ -141,7 +140,6 @@ public class TeamPanel extends CollapsablePanel {
                     return -events.size() + 1 + index.getRow();
 				} else if (index.getColumn() == 1) {
 					double res = Duration.between(events.get(index.getRow()).getTime(), events.get(index.getRow() + 1).getTime()).toMillis() / 1000D;
-                    LOG.debug("Dur: {}", res);
                     return res;
 				}
 			}
@@ -180,7 +178,7 @@ public class TeamPanel extends CollapsablePanel {
             			// TODO: Use the alpha to indicate how severe the delay is
             		}
             		if (getState() == State.Extended && newSnapshot && menu.getCurrentIndex() == 0) {
-            			updateCharts(snapshot);
+            			updateCharts();
             		}
             	});
             });
@@ -217,7 +215,7 @@ public class TeamPanel extends CollapsablePanel {
     }
     
     // TODO: This shouldn't be entirely based on the latest snapshot... also, share this info!
-    private void updateCharts(Snapshot snapshot) {
+    private void updateCharts() {
     	Instant now = Instant.now();
     	Instant anHourAgo = now.minus(Duration.ofHours(1L));
     	try (Connection connection = Database.createConnection(EnumSet.of(Database.ConnectionFlags.READ_ONLY))) {
@@ -226,13 +224,16 @@ public class TeamPanel extends CollapsablePanel {
             	LOG.warn("No events");
             	return;
             }
+            Snapshot snapshot = Snapshot.loadForEvent(connection, events.get(0)).get(); // If it's not there, this is a fatal error
             List<Optional<Instant>> eventTimes = new ArrayList<>();
             List<List<TagSeenEvent>> eventLists = new ArrayList<>();
             for (int i = 0; i < config.getNbReaders(); i++) {
             	eventTimes.add(Optional.empty());
             	eventLists.add(new ArrayList<>());
             }
-            for (Event event : events) {
+            for (int i = 1; i < events.size(); ++i) {
+                Event event = events.get(i);
+                snapshot = event.apply(snapshot);
                 if (event instanceof TagSeenEvent && !event.isRemoved()) { // TODO(Roel): Well, we can't actually remove it, right?
                     final TagSeenEvent tagSeenEvent = (TagSeenEvent)event;
                     Optional<Integer> teamNb = snapshot.getTeamTagMap().tagToTeam(tagSeenEvent.getTag());
@@ -259,8 +260,6 @@ public class TeamPanel extends CollapsablePanel {
                     shortenedEventList = eventList;
                 }
                 itemModels.get(i).setEvents(anHourAgo, shortenedEventList);
-                LOG.debug("Min: {}, max: {}", charts.get(i).getAxis(Axis.XAxis).getMinimum(),
-                        charts.get(i).getAxis(Axis.XAxis).getMaximum());
             }
     	} catch (SQLException e) {
     		LOG.error("Couldn't fetch events", e);
@@ -391,7 +390,7 @@ public class TeamPanel extends CollapsablePanel {
     protected void toggleOpenClosed() {
     	super.toggleOpenClosed();
     	if (latestSnapshot.isPresent()) {
-    		updateCharts(latestSnapshot.get());
+    		updateCharts();
     	}
     }
 }

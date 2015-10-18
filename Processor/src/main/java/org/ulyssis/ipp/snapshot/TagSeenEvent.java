@@ -64,7 +64,6 @@ public final class TagSeenEvent extends Event {
     }
 
     protected Snapshot doApply(Snapshot snapshot) {
-        LOG.debug("Applying TagSeenEvent for tag {}, reader id {}", tag, readerId);
         if (snapshot.getStartTime().isBefore(getTime()) &&
                 snapshot.getEndTime().isAfter(getTime())) {
             Optional<Integer> teamNb = snapshot.getTeamTagMap().tagToTeam(tag);

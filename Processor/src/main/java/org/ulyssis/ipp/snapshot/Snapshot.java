@@ -175,6 +175,24 @@ public final class Snapshot {
         return new Builder(time, other);
     }
 
+    public static Optional<Snapshot> loadForEvent(Connection connection, Event event) throws SQLException, IOException {
+        String statement = "SELECT \"id\", \"data\" FROM \"snapshots\" WHERE \"event\" = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(statement)) {
+            stmt.setLong(1, event.getId().get());
+            LOG.debug("executing query: {}", stmt);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                String data = rs.getString("data");
+                Snapshot result = Serialization.getJsonMapper().readValue(data, Snapshot.class);
+                result.id = rs.getLong("id");
+                result.eventId = event.getId().get();
+                return Optional.of(result);
+            } else {
+                return Optional.empty();
+            }
+        }
+    }
+
     public static Optional<Snapshot> loadLatest(Connection connection) throws SQLException, IOException {
         String statement = "SELECT \"id\", \"data\", \"event\" FROM \"snapshots\" ORDER BY \"time\" DESC FETCH FIRST ROW ONLY";
         try (Statement stmt = connection.createStatement();

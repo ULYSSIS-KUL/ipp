@@ -316,8 +316,8 @@ public final class Reader implements Runnable {
             if (options.getNoRedis()) {
                 updateCount++;
             } else {
-                LOG.debug("Pushing update {}:{} to Redis",
-                        update.getReaderId(), update.getUpdateCount());
+                LOG.info("Pushing update {}:{} to Redis, tag: {}",
+                        update.getReaderId(), update.getUpdateCount(), tag);
                 try {
                     Transaction t = jedis.multi();
                     Response<Long> nextUpdateCount = t.rpush("updates".getBytes(), updateBytes);

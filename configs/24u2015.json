@@ -1,22 +1,22 @@
 {
-    "trackLength" : 520,
+    "trackLength" : 516,
 	"speedwayURIs": [
-		"tcp://192.168.0.1",
+                "tcp://192.168.0.3",
 		"tcp://192.168.0.2",
-                "tcp://192.168.0.3"
+		"tcp://192.168.0.1"
 	],
     "readers" : [
         {
-            "uri" : "redis://192.168.0.10",
-            "position" : 0.0
+            "uri": "redis://192.168.0.12",
+            "position": 0
         },
         {
             "uri" : "redis://192.168.0.11",
-            "position" : 195
+            "position": 197.5
         },
         {
-            "uri": "redis://192.168.0.12",
-            "position": 317
+            "uri" : "redis://192.168.0.10",
+            "position": 322.0
         }
     ],
     "teams" : [
@@ -92,13 +92,13 @@
         },
         {
             "teamNb": 17,
-            "naam": "Pedal & Hesteria",
+            "name": "Pedal & Hesteria",
             "tags": ["002420150017"]
         },
         {
             "teamNb": 18,
-            "naam": "Lerkeveld",
-            "tags": ["02420150018"]
+            "name": "Lerkeveld",
+            "tags": ["002420150018"]
         }
     ]
 }

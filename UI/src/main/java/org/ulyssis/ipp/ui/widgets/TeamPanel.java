@@ -17,20 +17,7 @@
  */
 package org.ulyssis.ipp.ui.widgets;
 
-import eu.webtoolkit.jwt.ItemDataRole;
-import eu.webtoolkit.jwt.Orientation;
-import eu.webtoolkit.jwt.WAbstractItemModel;
-import eu.webtoolkit.jwt.WContainerWidget;
-import eu.webtoolkit.jwt.WLineEdit;
-import eu.webtoolkit.jwt.WMenu;
-import eu.webtoolkit.jwt.WModelIndex;
-import eu.webtoolkit.jwt.WProgressBar;
-import eu.webtoolkit.jwt.WPushButton;
-import eu.webtoolkit.jwt.WSpinBox;
-import eu.webtoolkit.jwt.WStackedWidget;
-import eu.webtoolkit.jwt.WString;
-import eu.webtoolkit.jwt.WTemplate;
-import eu.webtoolkit.jwt.WWidget;
+import eu.webtoolkit.jwt.*;
 import eu.webtoolkit.jwt.chart.Axis;
 import eu.webtoolkit.jwt.chart.ChartType;
 import eu.webtoolkit.jwt.chart.SeriesType;
@@ -238,6 +225,14 @@ public class TeamPanel extends CollapsablePanel {
                     final TagSeenEvent tagSeenEvent = (TagSeenEvent)event;
                     Optional<Integer> teamNb = snapshot.getTeamTagMap().tagToTeam(tagSeenEvent.getTag());
                     if (teamNb.isPresent() && teamNb.get().equals(team.getTeamNb())) {
+                        // TODO(Roel): This hack is kind of dirty. In fact, all of this
+                        //             code is kind of dirty.
+                        if (eventTimes.get(tagSeenEvent.getReaderId()).isPresent()) {
+                            if (Duration.between(eventTimes.get(tagSeenEvent.getReaderId()).get(),
+                                    event.getTime()).toMillis() <= 30_000) {
+                                continue;
+                            }
+                        }
                         eventTimes.get(tagSeenEvent.getReaderId()).ifPresent(lastTime -> {
                             try {
                                 eventLists.get(tagSeenEvent.getReaderId()).add(tagSeenEvent);

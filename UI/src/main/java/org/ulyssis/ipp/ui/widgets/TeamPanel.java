@@ -19,6 +19,7 @@ package org.ulyssis.ipp.ui.widgets;
 
 import eu.webtoolkit.jwt.ItemDataRole;
 import eu.webtoolkit.jwt.Orientation;
+import eu.webtoolkit.jwt.TextFormat;
 import eu.webtoolkit.jwt.WAbstractItemModel;
 import eu.webtoolkit.jwt.WContainerWidget;
 import eu.webtoolkit.jwt.WLineEdit;

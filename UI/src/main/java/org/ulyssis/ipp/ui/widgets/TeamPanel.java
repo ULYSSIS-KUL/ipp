@@ -302,7 +302,7 @@ public class TeamPanel extends CollapsablePanel {
         content.addWidget(stack);
 
         barContent.bindInt("nb", team.getTeamNb());
-        barContent.bindString("name", team.getName());
+        barContent.bindString("name", team.getName(), TextFormat.PlainText);
         barContent.bindInt("pos", team.getTeamNb());
         barContent.bindInt("rounds", 0);
         

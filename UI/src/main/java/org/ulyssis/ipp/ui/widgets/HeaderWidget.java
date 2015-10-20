@@ -89,9 +89,9 @@ public class HeaderWidget extends WTemplate {
                         int pos = 1;
                         for (int i = 0; i < teams.size(); ++i) {
                             Score.Team team = teams.get(i);
-                            table.getElementAt(i+1, 0).addWidget(new WText(String.valueOf(pos)));
-                            table.getElementAt(i+1, 1).addWidget(new WText(team.getName()));
-                            table.getElementAt(i+1, 2).addWidget(new WText(String.valueOf(team.getLaps())));
+                            table.getElementAt(i+1, 0).addWidget(new WText(String.valueOf(pos), TextFormat.PlainText));
+                            table.getElementAt(i+1, 1).addWidget(new WText(team.getName(), TextFormat.PlainText));
+                            table.getElementAt(i+1, 2).addWidget(new WText(String.valueOf(team.getLaps()), TextFormat.PlainText));
                             if (i + 1 != teams.size()) {
                                 if (teams.get(i+1).getLaps() != team.getLaps()) {
                                     pos = i + 2;

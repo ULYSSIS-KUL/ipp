@@ -239,6 +239,14 @@ public class TeamPanel extends CollapsablePanel {
                     final TagSeenEvent tagSeenEvent = (TagSeenEvent)event;
                     Optional<Integer> teamNb = snapshot.getTeamTagMap().tagToTeam(tagSeenEvent.getTag());
                     if (teamNb.isPresent() && teamNb.get().equals(team.getTeamNb())) {
+                        // TODO(Roel): This hack is kind of dirty. In fact, all of this
+                        //             code is kind of dirty.
+                        if (eventTimes.get(tagSeenEvent.getReaderId()).isPresent()) {
+                            if (Duration.between(eventTimes.get(tagSeenEvent.getReaderId()).get(),
+                                    event.getTime()).toMillis() <= 30_000) {
+                                continue;
+                            }
+                        }
                         eventTimes.get(tagSeenEvent.getReaderId()).ifPresent(lastTime -> {
                             try {
                                 eventLists.get(tagSeenEvent.getReaderId()).add(tagSeenEvent);

@@ -1,0 +1,94 @@
+{
+    "trackLength" : 500,
+	"speedwayURIs": [
+		"tcp://192.168.0.1",
+		"tcp://192.168.0.2"
+	],
+    "readers" : [
+        {
+            "uri" : "redis://192.168.0.10",
+            "position" : 0.0
+        },
+        {
+            "uri" : "redis://192.168.0.11",
+            "position" : 200
+        }
+    ],
+    "teams" : [
+        {
+            "teamNb": 1,
+            "name": "AP LO",
+            "tags": ["001020160001"]
+        },
+        {
+            "teamNb": 2,
+            "name": "Wikings-NSK",
+            "tags": ["001020160002"]
+        },
+        {
+            "teamNb": 3,
+            "name": "Sofia",
+            "tags": ["001020160003"]
+        },
+        {
+            "teamNb": 4,
+            "name": "VulcAymie",
+            "tags": ["001020160004"]
+        },
+        {
+            "teamNb": 5,
+            "name": "PornoTD Team",
+            "tags": ["001020160005"]
+        },
+        {
+            "teamNb": 6,
+            "name": "ESN",
+            "tags": ["001020160006"]
+        },
+        {
+            "teamNb": 7,
+            "name": "PSW",
+            "tags": ["001020160007"]
+        },
+        {
+            "teamNb": 8,
+            "name": "Team AP",
+            "tags": ["001020160008"]
+        },
+        {
+            "teamNb": 9,
+            "name": "Amentia",
+            "tags": ["001020160009"]
+        },
+        {
+            "teamNb": 10,
+            "name": "Kinesia",
+            "tags": ["001020160010"]
+        },
+        {
+            "teamNb": 11,
+            "name": "Eligia",
+            "tags": ["001020160011"]
+        },
+        {
+            "teamNb": 12,
+            "name": "VADA",
+            "tags": ["001020160012"]
+        },
+        {
+            "teamNb": 13,
+            "name": "Chillrijk",
+            "tags": ["001020160013"]
+        },
+        {
+            "teamNb": 14,
+            "name": "Appotus",
+            "tags": ["001020160014"]
+        },
+        {
+            "teamNb": 15,
+            "name": "Transmagsoc",
+            "tags": ["001020160015"]
+        }
+    ]
+}

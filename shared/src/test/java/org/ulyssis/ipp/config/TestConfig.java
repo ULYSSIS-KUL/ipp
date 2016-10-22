@@ -17,9 +17,12 @@
  */
 package org.ulyssis.ipp.config;
 
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.google.common.collect.ImmutableList;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.ulyssis.ipp.utils.Serialization;
 import org.ulyssis.ipp.TagId;
 
@@ -129,5 +132,14 @@ public class TestConfig {
         // TODO: This check is too specific
         assertThat(json, sameJSONAs("{\"teamNb\":4,\"name\":\"Team four\",\"tags\":[\"abcd0123\",\"0123ABCD\"]}")
             .allowingAnyArrayOrdering());
+    }
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
+    @Test
+    public void testNameNaamMixup() throws Exception {
+        exception.expect(UnrecognizedPropertyException.class);
+        Serialization.getJsonMapper().readValue("{\"teamNb\":3,\"naam\":\"My team\"}", Team.class);
     }
 }

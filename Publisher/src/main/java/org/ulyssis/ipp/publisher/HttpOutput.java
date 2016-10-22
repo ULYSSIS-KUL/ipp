@@ -42,8 +42,22 @@ public final class HttpOutput implements ScoreOutput {
     private static final Logger LOG = LogManager.getLogger(HttpOutput.class);
     private final PublisherOptions options;
 
+    private final SSLConnectionSocketFactory sslConnectionSocketFactory;
+
+    private CloseableHttpClient httpClient;
+
+    /**
+     * Score output that serializes scores to JSON and forwards them via a POST request.
+     *
+     * Can use a private key for client SSL authentication.
+     */
     public HttpOutput(PublisherOptions options) {
         this.options = options;
+        sslConnectionSocketFactory = new SSLConnectionSocketFactory(
+                createSslCustomContext(),
+                new String[]{"TLSv1"},
+                null,
+                SSLConnectionSocketFactory.getDefaultHostnameVerifier());
     }
 
     private SSLContext createSslCustomContext() {
@@ -75,40 +89,51 @@ public final class HttpOutput implements ScoreOutput {
 
     @Override
     public void outputScore(Score score) {
-        SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(
-                createSslCustomContext(),
-                new String[]{"TLSv1"},
-                null,
-                SSLConnectionSocketFactory.getDefaultHostnameVerifier());
-        try (CloseableHttpClient httpClient = HttpClients.custom().setSSLSocketFactory(csf).build()) {
+        if (httpClient == null)
+            httpClient = HttpClients.custom().setSSLSocketFactory(sslConnectionSocketFactory).build();
+
+        try {
             HttpPost req = new HttpPost(options.getHttp().toURI());
             byte[] scoreBytes = Serialization.getJsonMapper().writeValueAsBytes(score);
             HttpEntity ent = new ByteArrayEntity(scoreBytes, ContentType.APPLICATION_JSON);
             req.setEntity(ent);
             try (CloseableHttpResponse response = httpClient.execute(req)) {
                 if (response.getStatusLine().getStatusCode() != 200) {
-                    LOG.error("Non-success result!");
+                    LOG.error("Received non-success result! Status code was {} {}",
+                            response.getStatusLine().getStatusCode(), response.getStatusLine().getReasonPhrase());
                     return;
                 }
                 HttpEntity entity = response.getEntity();
                 if (entity.getContentLength() != 7L) {
-                    LOG.error("Non-success result!");
+                    LOG.error("Received response with wrong content length. Content length was {}",
+                            entity.getContentLength());
                     return;
                 }
                 String result = EntityUtils.toString(entity, StandardCharsets.UTF_8);
                 if (!"SUCCESS".equals(result)) {
-                    LOG.error("Non-success result!");
+                    LOG.error("Did not receive \"SUCCESS\" response.");
                     return;
                 }
             }
         } catch (Exception e) {
-            // TODO: DO SOMETHING WITH THE EXCEPTION!
-            LOG.error("Exception", e);
+            LOG.error("An error occurred while POSTing score", e);
+            try {
+                httpClient.close();
+            } catch (Exception e2) {
+                LOG.error("An error occurred when closing connection", e2);
+            }
+            httpClient = null;
         }
     }
 
     @Override
     public void cleanup() {
-        // TODO: CLEANUP!
+        if (httpClient != null) {
+            try {
+                httpClient.close();
+            } catch (Exception e) {
+                LOG.error("An error occurred when closing connection", e);
+            }
+        }
     }
 }

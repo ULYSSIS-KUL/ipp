@@ -21,6 +21,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * A score output interface. Multiple implementations exist, for outputting scores to files or passing them
+ * on via HTTP.
+ */
 public interface ScoreOutput {
     static List<ScoreOutput> outputsFromOptions(PublisherOptions options) {
         List<ScoreOutput> result = new ArrayList<>();
@@ -33,6 +37,13 @@ public interface ScoreOutput {
         return Collections.unmodifiableList(result);
     }
 
+    /**
+     * Outputs the given score.
+     */
     void outputScore(Score score);
+
+    /**
+     * Called at the end, allows for the score output to clean itself up, e.g. close upstream HTTP connections.
+     */
     void cleanup();
 }

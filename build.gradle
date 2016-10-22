@@ -68,7 +68,8 @@ subprojects {
 def exportedProjects = [
     ":shared",
     ":Processor",
-    ":Reader"
+    ":Reader",
+    ":Publisher"
 ]
 
 repositories {

@@ -119,7 +119,7 @@ public class TestConfig {
     public void testSerializeTeam() throws Exception {
         Team team = new Team(3, "Team three");
         String json = Serialization.getJsonMapper().writeValueAsString(team);
-        assertThat(json, sameJSONAs("{\"teamNb\":3,\"name\":\"Team three\"}"));
+        assertThat(json, sameJSONAs("{\"teamNb\":3,\"name\":\"Team three\",\"tags\":[]}"));
     }
 
     @Test

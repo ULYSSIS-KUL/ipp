@@ -9,7 +9,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.3.1'
+        classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.6.3'
     }
 }
 
@@ -68,11 +68,12 @@ subprojects {
 def exportedProjects = [
     ":shared",
     ":Processor",
-    ":Reader"
+    ":Reader",
+    ":Publisher"
 ]
 
 repositories {
-    mavenCentral()
+    jcenter()
 }
 
 configurations {
@@ -80,7 +81,7 @@ configurations {
 }
 
 dependencies {
-    asciidoclet 'org.asciidoctor:asciidoclet:0.+'
+    asciidoclet 'org.asciidoctor:asciidoclet:1.+'
 }
 
 task jacocoRootReport(type: org.gradle.testing.jacoco.tasks.JacocoReport) {
@@ -119,5 +120,5 @@ task alljavadoc(type: Javadoc) {
 alljavadoc {
     options.docletpath = configurations.asciidoclet.files.asType(List)
     options.doclet = 'org.asciidoctor.Asciidoclet'
-    options.addStringOption('include-basedir', "${projectDir}")
+    options.addStringOption('-base-dir', "${projectDir}")
 }

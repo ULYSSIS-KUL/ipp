@@ -17,8 +17,8 @@ dependencies {
     compile group: 'com.google.code.gson', name: 'gson', version: '2.3.+'
     providedCompile files('../lib/jwt/git/lib/servlet-api/servlet-api-3.0.jar')
 
-    compile group: 'io.undertow', name: 'undertow-core', version: '1.2.8.Final'
-    compile group: 'io.undertow', name: 'undertow-servlet', version: '1.2.8.Final'
+    compile group: 'io.undertow', name: 'undertow-core', version: '1.4.3.Final'
+    compile group: 'io.undertow', name: 'undertow-servlet', version: '1.4.3.Final'
 
     compile project(':shared')
     compile project(':Processor') // TODO: Get rid of the Processor dependency?

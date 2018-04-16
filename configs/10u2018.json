@@ -1,0 +1,94 @@
+{
+    "trackLength" : 500,
+	"speedwayURIs": [
+		"tcp://192.168.0.1",
+		"tcp://192.168.0.2"
+	],
+    "readers" : [
+        {
+            "uri" : "redis://192.168.0.10",
+            "position" : 0.0
+        },
+        {
+            "uri" : "redis://192.168.0.11",
+            "position" : 200
+        }
+    ],
+    "teams" : [
+        {
+            "teamNb": 1,
+            "name": "Wikings-NSK",
+            "tags": ["001020180001"]
+        },
+        {
+            "teamNb": 2,
+            "name": "Vulcanis-Brabo",
+            "tags": ["001020180002"]
+        },
+        {
+            "teamNb": 3,
+            "name": "Sofia",
+            "tags": ["001020180003"]
+        },
+        {
+            "teamNb": 4,
+            "name": "VADA",
+            "tags": ["001020180004"]
+        },
+        {
+            "teamNb": 5,
+            "name": "PSW",
+            "tags": ["001020180005"]
+        },
+        {
+            "teamNb": 6,
+            "name": "Chips, Habes",
+            "tags": ["001020180006"]
+        },
+        {
+            "teamNb": 7,
+            "name": "LiSeMoK",
+            "tags": ["001020180007"]
+        },
+        {
+            "teamNb": 8,
+            "name": "Eliglia",
+            "tags": ["001020180008"]
+        },
+        {
+            "teamNb": 9,
+            "name": "Absoc",
+            "tags": ["001020180009"]
+        },
+        {
+            "teamNb": 10,
+            "name": "best of KdG",
+            "tags": ["001020180010"]
+        },
+        {
+            "teamNb": 11,
+            "name": "ESN",
+            "tags": ["001020180011"]
+        },
+        {
+            "teamNb": 12,
+            "name": "Chillrijk",
+            "tags": ["001020180012"]
+        },
+        {
+            "teamNb": 13,
+            "name": "Appotus, Brabo",
+            "tags": ["001020180013"]
+        },
+        {
+            "teamNb": 14,
+            "name": "Primus Scaldiae",
+            "tags": ["001020180014"]
+        },
+        {
+            "teamNb": 15,
+            "name": "Amentia",
+            "tags": ["001020180015"]
+        }
+    ]
+}

@@ -1,4 +1,15 @@
-apply plugin: 'jetty'
+buildscript {
+  repositories {
+    jcenter()
+  }
+
+  dependencies {
+    classpath 'org.gretty:gretty:+'
+  }
+}
+
+apply plugin: 'org.gretty'
+apply plugin: 'war'
 apply plugin: 'application'
 
 mainClassName = 'org.ulyssis.ipp.ui.Main'

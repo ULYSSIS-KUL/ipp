@@ -1,7 +1,10 @@
-apply plugin: 'jetty'
+apply plugin: 'war'
 apply plugin: 'application'
 
 mainClassName = 'org.ulyssis.ipp.ui.Main'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 repositories {
     jcenter()
@@ -30,11 +33,12 @@ war {
     webXml = file('src/main/resources/web.xml')
 }
 
-jettyRun {
-    contextPath = ''
-    webAppSourceDirectory = file('src/main')
-}
+task runApp(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = mainClassName
 
-jettyRunWar {
-    contextPath = ''
+    args = [
+            '--database', 'jdbc:postgresql://localhost:5432/postgres?user=postgres&pass=postgres',
+            "--config", "${rootProject.rootDir}/configs/simulation.json"
+    ]
 }

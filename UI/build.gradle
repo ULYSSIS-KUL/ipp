@@ -8,17 +8,11 @@ targetCompatibility = 1.8
 
 repositories {
     jcenter()
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
-    compile files('../lib/jwt/git/dist/jwt-3.3.5.jar')
-
-    // These are all necessary for JWt
-    compile group: 'org.apache.commons', name: 'commons-io', version: '1.+'
-    compile group: 'commons-fileupload', name: 'commons-fileupload', version: '1.+'
-    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.+'
-    compile group: 'com.google.code.gson', name: 'gson', version: '2.3.+'
-    providedCompile files('../lib/jwt/git/lib/servlet-api/servlet-api-3.0.jar')
+    compile group: 'com.github.emweb', name: 'jwt', version: '3.3.11'
 
     compile group: 'io.undertow', name: 'undertow-core', version: '1.4.3.Final'
     compile group: 'io.undertow', name: 'undertow-servlet', version: '1.4.3.Final'

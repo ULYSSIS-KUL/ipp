@@ -1,3 +1,0 @@
-[submodule "lib/jwt/git"]
-	path = lib/jwt/git
-	url = https://github.com/kdeforche/jwt.git

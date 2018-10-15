@@ -1,1 +1,1 @@
-include 'shared', 'Reader', 'Replayer', 'Processor', 'UI', 'lib/jwt', 'Publisher'
+include 'shared', 'Reader', 'Replayer', 'Processor', 'UI',  'Publisher'

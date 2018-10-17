@@ -93,7 +93,7 @@ public final class TagId {
         if (id == null) throw new NullPointerException("The tag id is not allowed to be null!");
         this.id = id;
         this.lowerCaseId = id.toLowerCase();
-        this.hashCode = id.hashCode();
+        this.hashCode = this.lowerCaseId.hashCode();
     }
 
     /**

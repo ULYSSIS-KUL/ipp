@@ -17,6 +17,7 @@
  */
 package org.ulyssis.ipp.processor;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ulyssis.ipp.config.Config;
@@ -28,6 +29,8 @@ import org.ulyssis.ipp.utils.Serialization;
 import redis.clients.jedis.Jedis;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -45,9 +48,9 @@ public final class ReaderListener extends JedisHelper.CallBackPubSub {
     /** The Redis connection to the reader */
     private final Jedis remoteJedis;
     /** The processor that this ReaderListener belongs to (and will push updates to) */
-    private final Consumer<Event> updateConsumer;
+    private final Consumer<List<Event>> updateConsumer;
 
-    public ReaderListener(int id, final Consumer<Event> updateConsumer, Optional<Long> lastUpdate) {
+    public ReaderListener(int id, final Consumer<List<Event>> updateConsumer, Optional<Long> lastUpdate) {
         this.updateConsumer = updateConsumer;
         this.remoteJedis = JedisHelper.get(Config.getCurrentConfig().getReader(id).getURI());
         this.lastUpdate = lastUpdate.orElse(-1L);
@@ -66,10 +69,10 @@ public final class ReaderListener extends JedisHelper.CallBackPubSub {
         long updateId = Long.parseLong(message, 10);
         List<byte[]> updates = remoteJedis.lrange(Config.getCurrentConfig().getUpdatesList().getBytes(),
                 lastUpdate + 1L, updateId);
-        for (byte[] update : updates) {
-            processMessage(update);
+        if (!updates.isEmpty()) {
+            processMessages(updates);
+            lastUpdate = updateId;
         }
-        lastUpdate = updateId;
     }
 
     /**
@@ -77,21 +80,25 @@ public final class ReaderListener extends JedisHelper.CallBackPubSub {
      */
     private void syncUpdates() {
         List<byte[]> updates = remoteJedis.lrange(Config.getCurrentConfig().getUpdatesList().getBytes(), lastUpdate + 1L, -1L);
-        for (byte[] update : updates) {
-            processMessage(update);
+        if (!updates.isEmpty()) {
+            processMessages(updates);
+            lastUpdate += updates.size();
         }
-        lastUpdate += updates.size();
     }
 
     /**
-     * Turn a JSON-represented message into a TagUpdate object, and queue it for processing.
+     * Turn a list of JSON-represented messages into TagUpdate objects, and queue them for processing.
      */
-    private void processMessage(byte[] message) {
-        try {
-            TagUpdate update = Serialization.getJsonMapper().readValue(message, TagUpdate.class);
-            updateConsumer.accept(new TagSeenEvent(update));
-        } catch (IOException e) {
-            LOG.error("Couldn't process update {}!", new String(message), e);
+    private void processMessages(List<byte[]> messages) {
+        List<TagSeenEvent> updates = new ArrayList<>();
+        for (byte[] message : messages) {
+            try {
+                TagUpdate update = Serialization.getJsonMapper().readValue(message, TagUpdate.class);
+                updates.add(new TagSeenEvent(update));
+            } catch (IOException e) {
+                LOG.error("Couldn't process update {}!", new String(message), e);
+            }
         }
+        updateConsumer.accept(ImmutableList.copyOf(updates));
     }
 }

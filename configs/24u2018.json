@@ -1,0 +1,114 @@
+{
+    "trackLength" : 515,
+        "speedwayURIs": [
+                "tcp://192.168.0.1",
+                "tcp://192.168.0.2",
+                "tcp://192.168.0.3"
+        ],
+    "readers" : [
+        {
+            "uri": "redis://192.168.0.10",
+            "position": 0
+        },
+        {
+            "uri" : "redis://192.168.0.11",
+            "position": 150
+        },
+        {
+            "uri" : "redis://192.168.0.12",
+            "position": 275
+        }
+    ],
+    "teams" : [
+        {
+            "teamNb": 1,
+            "name": "Apolloon",
+            "tags": ["002420180001"]
+        },
+        {
+            "teamNb": 2,
+            "name": "Viva Ekonomika",
+            "tags": ["002420180002"]
+        },
+        {
+            "teamNb": 3,
+            "name": "LBK",
+            "tags": ["002420180003"]
+        },
+        {
+            "teamNb": 4,
+            "name": "VTK",
+            "tags": ["002420180004"]
+        },
+        {
+            "teamNb": 5,
+            "name": "Wina",
+            "tags": ["002420180005"]
+        },
+        {
+            "teamNb": 6,
+            "name": "UCLL OKeR",
+            "tags": ["002420180006"]
+        },
+        {
+            "teamNb": 7,
+            "name": "Psychokring",
+            "tags": ["002420180007"]
+        },
+        {
+            "teamNb": 8,
+            "name": "Tripel Hop",
+            "tags": ["002420180008"]
+        },
+        {
+            "teamNb": 9,
+            "name": "Atmosphere",
+            "tags": ["002420180009"]
+        },
+        {
+            "teamNb": 10,
+            "name": "Runner's High",
+            "tags": ["002420180010"]
+        },
+        {
+            "teamNb": 11,
+            "name": "Industria",
+            "tags": ["002420180011"]
+        },
+        {
+            "teamNb": 12,
+            "name": "Farmaceutica",
+            "tags": ["002420180012"]
+        },
+        {
+            "teamNb": 13,
+            "name": "VRG Crimen",
+            "tags": ["002420180013"]
+        },
+        {
+            "teamNb": 14,
+            "name": "Politika",
+            "tags": ["002420180014"]
+        },
+        {
+            "teamNb": 15,
+            "name": "Run for Specials",
+            "tags": ["002420180015"]
+        },
+        {
+            "teamNb": 16,
+            "name": "Medica",
+            "tags": ["002420180016"]
+        },
+        {
+            "teamNb": 17,
+            "name": "Pedal",
+            "tags": ["002420180017"]
+        },
+        {
+            "teamNb": 18,
+            "name": "Lerkeveld",
+            "tags": ["002420180018"]
+        }
+    ]
+}

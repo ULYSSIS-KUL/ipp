@@ -9,9 +9,9 @@ dependencies {
     compile group: 'args4j', name: 'args4j', version: '2.+'
 
     // Jackson for JSON (de)serializing
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.+'
-    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.+'
-    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-guava', version: '2.+'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.+'
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.10.+'
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-guava', version: '2.10.+'
 
     // Jedis for Redis communication
     compile group: 'redis.clients', name: 'jedis', version: '2.+'

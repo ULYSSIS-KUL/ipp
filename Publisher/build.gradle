@@ -12,4 +12,5 @@ dependencies {
 
     compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2'
     compile group: 'io.undertow', name: 'undertow-core', version: '1.4.3.Final'
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jdk8', version: '2.10.+'
 }

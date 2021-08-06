@@ -18,6 +18,7 @@
 package org.ulyssis.ipp.publisher;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.snapshot.Snapshot;
@@ -41,13 +42,14 @@ public final class Score {
     private final Collection<Team> teams; // The teams, sorted by score
 
     @JsonIgnoreProperties({"nonLimitedPosition","lap"})
+    @JsonInclude(JsonInclude.Include.NON_ABSENT)
     public static final class Team implements Comparable<Team> {
         private final double lap;
         private final int nb; // The team number
         private final String name; // The name of the team
         private final int laps; // The number of laps
-        private final double position; // The predicted position of the team
-        private final double speed; // The predicted speed of the team
+        private final OptionalDouble position; // The predicted position of the team, not present if FinalScore
+        private final OptionalDouble speed; // The predicted speed of the team, not present if FinalScore
 
         private final double nonLimitedPosition; // The predicted position, not limited
 
@@ -55,12 +57,12 @@ public final class Score {
         public Team(@JsonProperty("nb") int nb,
                     @JsonProperty("name") String name,
                     @JsonProperty("laps") int laps,
-                    @JsonProperty("position") double position,
-                    @JsonProperty("speed") double speed) {
+                    @JsonProperty("position") OptionalDouble position,
+                    @JsonProperty("speed") OptionalDouble speed) {
             this(Double.NaN, nb, name, laps, position, Double.NaN, speed);
         }
 
-        public Team(double lap, int nb, String name, int laps, double position, double nonLimitedPosition, double speed) {
+        public Team(double lap, int nb, String name, int laps, OptionalDouble position, double nonLimitedPosition, OptionalDouble speed) {
             this.lap = lap;
             this.nb = nb;
             this.name = name;
@@ -82,7 +84,7 @@ public final class Score {
             return laps;
         }
 
-        public double getPosition() {
+        public OptionalDouble getPosition() {
             return position;
         }
         
@@ -90,7 +92,7 @@ public final class Score {
         	return nonLimitedPosition;
         }
 
-        public double getSpeed() {
+        public OptionalDouble getSpeed() {
             return speed;
         }
 
@@ -148,7 +150,10 @@ public final class Score {
                 TeamState t = teamState.get();
                 double speed = t.getPredictedSpeed();
                 if (Double.isNaN(speed)) {
-                    teams.add(new Team(lap, team.getTeamNb(), team.getName(), 0, 0, 0, 0));
+                    teams.add(new Team(lap, team.getTeamNb(), team.getName(), 0,
+                            this.status != Status.FinalScore ? OptionalDouble.of(0) : OptionalDouble.empty(),
+                            0,
+                            this.status != Status.FinalScore ? OptionalDouble.of(0) : OptionalDouble.empty()));
                 } else {
                     TagSeenEvent lastEvent = t.getLastTagSeenEvent().get();
                     Instant lastTime = t.getLastTagSeenEvent().get().getTime();
@@ -158,10 +163,15 @@ public final class Score {
                     double position = nonLimitedPosition;
                     if (position > config.getTrackLength()) position = config.getTrackLength();
                     teams.add(new Team(lap, team.getTeamNb(), team.getName(), t.getNbLaps(),
-                            position / config.getTrackLength(), nonLimitedPosition / config.getTrackLength(), speed));
+                            this.status != Status.FinalScore ? OptionalDouble.of(position / config.getTrackLength()) : OptionalDouble.empty(),
+                            nonLimitedPosition / config.getTrackLength(),
+                            this.status != Status.FinalScore ? OptionalDouble.of(speed) : OptionalDouble.empty()));
                 }
             } else {
-                teams.add(new Team(lap, team.getTeamNb(), team.getName(), 0, 0, 0, 0));
+                teams.add(new Team(lap, team.getTeamNb(), team.getName(), 0,
+                        this.status != Status.FinalScore ? OptionalDouble.of(0) : OptionalDouble.empty(),
+                        0,
+                        this.status != Status.FinalScore ? OptionalDouble.of(0) : OptionalDouble.empty()));
             }
         }
     }

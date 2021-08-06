@@ -173,7 +173,9 @@ public class TeamPanel extends CollapsablePanel {
             	snapshot.getTeamStates().getStateForTeam(this.team.getTeamNb()).ifPresent(teamState -> {
             		double pos = teamState.getLastTagSeenEvent().map(ev -> config.getReader(ev.getReaderId()).getPosition()).orElse(0.0);
             		actualProgress.setValue(pos / config.getTrackLength());
-            		projectedProgress.setValue(scoreTeam.getPosition());
+                    if (scoreTeam.getPosition().isPresent()) {
+                        projectedProgress.setValue(scoreTeam.getPosition().getAsDouble());
+                    }
             		if (scoreTeam.getNonLimitedPosition() > 1.0) {
             			double alpha = (scoreTeam.getNonLimitedPosition() - 1.0) * 4;
             			// TODO: Use the alpha to indicate how severe the delay is

@@ -22,6 +22,7 @@ import org.ulyssis.ipp.TagId;
 import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.config.Team;
 import org.ulyssis.ipp.snapshot.AddTagEvent;
+import org.ulyssis.ipp.snapshot.CorrectionEvent;
 import org.ulyssis.ipp.snapshot.Event;
 import org.ulyssis.ipp.snapshot.Snapshot;
 import org.ulyssis.ipp.updates.Status;
@@ -68,10 +69,30 @@ public class TestScore {
             new Result(15, "Run for Specials", 503)
     );
 
-    @Test
-    public void test24u2014() throws Exception {
-        Config.setCurrentConfig(Config.fromConfigurationFile(Paths.get("..","configs","24u2014.json")).get());
-        BufferedReader reader = Files.newBufferedReader(Paths.get("..","replays","24u2014","events.json"));
+    private List<Result> results2018 = Arrays.asList(
+            new Result(1, "Apolloon", 1073),
+            new Result(4, "VTK", 1072),
+            new Result(3, "LBK", 1016),
+            new Result(2, "Viva Ekonomika", 1015),
+            new Result(16, "Medica", 954),
+            new Result(11, "Industria", 953),
+            new Result(5, "Wina", 884),
+            new Result(9, "Atmosphere", 876),
+            new Result(13, "VRG Crimen", 865),
+            new Result(8, "Tripel Hop", 864),
+            new Result(18, "Lerkeveld", 855),
+            new Result(6, "UCLL OKeR", 832),
+            new Result(17, "Pedal", 828),
+            new Result(7, "Psychokring", 811),
+            new Result(10, "Runner's High", 810),
+            new Result(12, "Farmaceutica", 795),
+            new Result(14, "Politika", 748),
+            new Result(15, "Run for Specials", 497)
+    );
+
+    void test24u(int edition, List<Result> results) throws Exception {
+        Config.setCurrentConfig(Config.fromConfigurationFile(Paths.get("..","configs","24u" + edition + ".json")).get());
+        BufferedReader reader = Files.newBufferedReader(Paths.get("..","replays","24u" + edition, "events.json"));
         String line = reader.readLine();
         Snapshot snapshot = new Snapshot(Instant.EPOCH);
         for (Team team : Config.getCurrentConfig().getTeams()) {
@@ -88,13 +109,23 @@ public class TestScore {
         assertThat(score.getStatus(), equalTo(Status.FinalScore));
         Collection<Score.Team> teams = score.getTeams();
         List<Score.Team> t = new ArrayList<>(teams);
-        assertThat(t.size(), equalTo(18));
+        assertThat(t.size(), equalTo(results.size()));
         for (int i = 0; i < t.size(); ++i) {
-            Result result = results2014.get(i);
+            Result result = results.get(i);
             Score.Team team = t.get(i);
             assertThat(team.getNb(), equalTo(result.nb));
             assertThat(team.getName(), equalTo(result.name));
             assertThat(team.getLaps(), equalTo(result.laps));
         }
+    }
+
+    @Test
+    public void test24u2014() throws Exception {
+        test24u(2014, results2014);
+    }
+
+    @Test
+    public void test24u2018() throws Exception {
+        test24u(2018, results2018);
     }
 }

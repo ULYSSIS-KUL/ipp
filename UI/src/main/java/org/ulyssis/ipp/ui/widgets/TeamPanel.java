@@ -17,21 +17,7 @@
  */
 package org.ulyssis.ipp.ui.widgets;
 
-import eu.webtoolkit.jwt.ItemDataRole;
-import eu.webtoolkit.jwt.Orientation;
-import eu.webtoolkit.jwt.TextFormat;
-import eu.webtoolkit.jwt.WAbstractItemModel;
-import eu.webtoolkit.jwt.WContainerWidget;
-import eu.webtoolkit.jwt.WLineEdit;
-import eu.webtoolkit.jwt.WMenu;
-import eu.webtoolkit.jwt.WModelIndex;
-import eu.webtoolkit.jwt.WProgressBar;
-import eu.webtoolkit.jwt.WPushButton;
-import eu.webtoolkit.jwt.WSpinBox;
-import eu.webtoolkit.jwt.WStackedWidget;
-import eu.webtoolkit.jwt.WString;
-import eu.webtoolkit.jwt.WTemplate;
-import eu.webtoolkit.jwt.WWidget;
+import eu.webtoolkit.jwt.*;
 import eu.webtoolkit.jwt.chart.Axis;
 import eu.webtoolkit.jwt.chart.ChartType;
 import eu.webtoolkit.jwt.chart.SeriesType;
@@ -45,6 +31,7 @@ import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.config.Team;
 import org.ulyssis.ipp.control.commands.AddTagCommand;
 import org.ulyssis.ipp.control.commands.CorrectionCommand;
+import org.ulyssis.ipp.control.commands.CorrectionType;
 import org.ulyssis.ipp.control.commands.RemoveTagCommand;
 import org.ulyssis.ipp.processor.Database;
 import org.ulyssis.ipp.publisher.Score;
@@ -85,6 +72,8 @@ public class TeamPanel extends CollapsablePanel {
     private final WPushButton addTagButton;
     
     private final WSpinBox correctionSpinner;
+    private final WComboBox correctionType;
+    private final WLineEdit correctionExplanation;
     private final WPushButton addCorrection;
     
     private final WProgressBar projectedProgress;
@@ -357,6 +346,15 @@ public class TeamPanel extends CollapsablePanel {
         correctionSpinner.setMinimum(-2000);
         correctionSpinner.setMaximum(2000);
         correctionsView.bindWidget("correction-spinner", correctionSpinner);
+        correctionType = new WComboBox();
+        correctionType.addItem("Correction");
+        correctionType.addItem("Penalty");
+        correctionType.addItem("Other");
+        correctionsView.bindWidget("correction-type", correctionType);
+        System.out.println("ja hallo?");
+        correctionExplanation = new WLineEdit();
+        correctionExplanation.setTextSize(80);
+        correctionsView.bindWidget("correction-explanation", correctionExplanation);
         addCorrection = new WPushButton("Commit");
         correctionsView.bindWidget("commit-button", addCorrection);
         addCorrection.clicked().addListener(this, this::performCorrection);
@@ -378,7 +376,25 @@ public class TeamPanel extends CollapsablePanel {
     private void performCorrection() {
     	int correction = correctionSpinner.getValue();
     	correctionSpinner.setValue(0);
-    	sharedState.getCommandDispatcher().sendAsync(new CorrectionCommand(team.getTeamNb(), correction));
+        String typeText = correctionType.getValueText();
+        CorrectionType type;
+        switch (typeText) {
+            case "Correction":
+                type = CorrectionType.Correction;
+                break;
+            case "Penalty":
+                type = CorrectionType.Penalty;
+                break;
+            default:
+                type = CorrectionType.Other;
+                break;
+        }
+        correctionType.setCurrentIndex(0);
+        String explanation = correctionExplanation.getText().toString();
+        correctionExplanation.setText("");
+    	sharedState
+                .getCommandDispatcher()
+                .sendAsync(new CorrectionCommand(team.getTeamNb(), correction, type, explanation));
     }
 
     @Override

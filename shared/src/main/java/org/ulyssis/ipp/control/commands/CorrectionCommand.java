@@ -18,15 +18,20 @@
 package org.ulyssis.ipp.control.commands;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @JsonTypeName("Correction")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CorrectionCommand extends Command {
     private final int teamNb;
     private final int correction;
+    private final CorrectionType correctionType;
+    private final String explanation;
 
     /**
      * Create a CorrectionCommand
@@ -36,26 +41,34 @@ public class CorrectionCommand extends Command {
      *        The correction in nb. of laps. Positive adds laps,
      *        negative removes laps.
      */
-    public CorrectionCommand(int teamNb, int correction) {
+    public CorrectionCommand(int teamNb, int correction, CorrectionType type, String explanation) {
         super();
         this.teamNb = teamNb;
         this.correction = correction;
+        this.correctionType = type;
+        this.explanation = explanation;
     }
 
-    public CorrectionCommand(Instant time, int teamNb, int correction) {
+    public CorrectionCommand(Instant time, int teamNb, int correction, CorrectionType type, String explanation) {
         super(time);
         this.teamNb = teamNb;
         this.correction = correction;
+        this.correctionType = type;
+        this.explanation = explanation;
     }
 
     @JsonCreator
     private CorrectionCommand(@JsonProperty("commandId") String commandId,
                               @JsonProperty("time") Instant time,
                               @JsonProperty("teamNb") int teamNb,
-                              @JsonProperty("correction") int correction) {
+                              @JsonProperty("correction") int correction,
+                              @JsonProperty("correctionType") CorrectionType type,
+                              @JsonProperty("explanation") String explanation) {
         super(commandId, time);
         this.teamNb = teamNb;
         this.correction = correction;
+        this.correctionType = type;
+        this.explanation = explanation;
     }
 
     public int getTeamNb() {
@@ -65,4 +78,8 @@ public class CorrectionCommand extends Command {
     public int getCorrection() {
         return correction;
     }
+
+    public CorrectionType getCorrectionType() { return correctionType; }
+
+    public String getExplanation() { return explanation; }
 }

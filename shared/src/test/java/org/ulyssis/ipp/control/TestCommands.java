@@ -20,6 +20,8 @@ package org.ulyssis.ipp.control;
 import org.junit.Test;
 import org.ulyssis.ipp.control.commands.AddTagCommand;
 import org.ulyssis.ipp.control.commands.Command;
+import org.ulyssis.ipp.control.commands.CorrectionCommand;
+import org.ulyssis.ipp.control.commands.CorrectionType;
 import org.ulyssis.ipp.utils.Serialization;
 import org.ulyssis.ipp.TagId;
 
@@ -60,5 +62,45 @@ public class TestCommands {
         assertThat(addTagCommand.getTime(), equalTo(Instant.EPOCH));
         assertThat(addTagCommand.getTag(), equalTo(new TagId("abcd")));
         assertThat(addTagCommand.getTeamNb(), equalTo(1));
+    }
+
+    @Test
+    public void testCorrectionCommand_Deserialize_Old() throws Exception {
+        String correctionCommandStr = "{" +
+                "\"type\": \"Correction\"," +
+                "\"commandId\": \"1234\"," +
+                "\"time\": 0," +
+                "\"teamNb\": 1," +
+                "\"correction\": -1" +
+                "}";
+        Command command = Serialization.getJsonMapper().readValue(correctionCommandStr, Command.class);
+        assertThat(command, instanceOf(CorrectionCommand.class));
+        CorrectionCommand correctionCommand = (CorrectionCommand)command;
+        assertThat(correctionCommand.getCommandId(), equalTo("1234"));
+        assertThat(correctionCommand.getTime(), equalTo(Instant.EPOCH));
+        assertThat(correctionCommand.getTeamNb(), equalTo(1));
+        assertThat(correctionCommand.getCorrectionType(), equalTo(null));
+        assertThat(correctionCommand.getExplanation(), equalTo(null));
+    }
+
+    @Test
+    public void testCorrectionCommand_Deserialize_New() throws Exception {
+        String correctionCommandStr = "{" +
+                "\"type\": \"Correction\"," +
+                "\"commandId\": \"1234\"," +
+                "\"time\": 0," +
+                "\"teamNb\": 1," +
+                "\"correction\": -1," +
+                "\"correctionType\": \"Penalty\"," +
+                "\"explanation\": \"running in wrong direction\"" +
+                "}";
+        Command command = Serialization.getJsonMapper().readValue(correctionCommandStr, Command.class);
+        assertThat(command, instanceOf(CorrectionCommand.class));
+        CorrectionCommand correctionCommand = (CorrectionCommand)command;
+        assertThat(correctionCommand.getCommandId(), equalTo("1234"));
+        assertThat(correctionCommand.getTime(), equalTo(Instant.EPOCH));
+        assertThat(correctionCommand.getTeamNb(), equalTo(1));
+        assertThat(correctionCommand.getCorrectionType(), equalTo(CorrectionType.Penalty));
+        assertThat(correctionCommand.getExplanation(), equalTo("running in wrong direction"));
     }
 }

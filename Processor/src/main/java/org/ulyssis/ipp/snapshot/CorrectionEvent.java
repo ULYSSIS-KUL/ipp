@@ -20,6 +20,7 @@ package org.ulyssis.ipp.snapshot;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.ulyssis.ipp.control.commands.Command;
 import org.ulyssis.ipp.control.commands.CorrectionCommand;
+import org.ulyssis.ipp.control.commands.CorrectionType;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -28,6 +29,8 @@ import java.util.Optional;
 public final class CorrectionEvent extends Event {
     private int teamNb;
     private int correction;
+    private CorrectionType correctionType;
+    private String explanation;
 
     /**
      * Constructor for Jackson
@@ -47,11 +50,17 @@ public final class CorrectionEvent extends Event {
      * @param correction
      *        The number of laps that should be added (positive)
      *        or removed (negative)
+     * @param correctionType
+     *        The type of correction (correction, penalty, or other).
+     * @param explanation
+     *        A custom explanation as for why the correction happened.
      */
-    public CorrectionEvent(Instant time, int teamNb, int correction) {
+    public CorrectionEvent(Instant time, int teamNb, int correction, CorrectionType correctionType, String explanation) {
         super(time);
         this.teamNb = teamNb;
         this.correction = correction;
+        this.correctionType = correctionType;
+        this.explanation = explanation;
     }
 
     @SuppressWarnings("unused")
@@ -63,6 +72,12 @@ public final class CorrectionEvent extends Event {
     public int getCorrection() {
         return correction;
     }
+
+    @SuppressWarnings("unused")
+    public CorrectionType getCorrectionType() { return correctionType; }
+
+    @SuppressWarnings("unused")
+    public String getExplanation() { return explanation; }
 
     protected Snapshot doApply(Snapshot snapshot) {
         TeamStates oldTeamStates = snapshot.getTeamStates();
@@ -81,7 +96,13 @@ public final class CorrectionEvent extends Event {
     public static CorrectionEvent fromCommand(Command command) {
         assert(command instanceof CorrectionCommand);
         CorrectionCommand cmd = (CorrectionCommand) command;
-        return new CorrectionEvent(cmd.getTime(), cmd.getTeamNb(), cmd.getCorrection());
+        return new CorrectionEvent(
+                cmd.getTime(),
+                cmd.getTeamNb(),
+                cmd.getCorrection(),
+                cmd.getCorrectionType(),
+                cmd.getExplanation()
+        );
     }
 
     @Override

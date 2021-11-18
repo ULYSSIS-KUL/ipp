@@ -60,7 +60,7 @@ public final class ReplayerOptions extends Options {
                     try {
                         readerId = Integer.parseInt(split[0], 10);
                     } catch (NumberFormatException ignored) {
-                        System.err.println("CCC");
+                        System.err.println("Expected a number before the colon, received: " + split[0]);
                     }
                 }
                 if (readerId == null) {
@@ -68,16 +68,14 @@ public final class ReplayerOptions extends Options {
                     if (path.toFile().isFile()) {
                         withoutId.add(path);
                     } else {
-                        System.err.println("AAA");
-                        // TODO: PROPER ERROR!
+                        System.err.println("File not found: " + path);
                     }
                 } else {
                     Path path = Paths.get(split[1]);
                     if (path.toFile().isFile()) {
                         replayerOptions.replayMap.put(readerId, path);
                     } else {
-                        System.err.println("BBB");
-                        // TODO: PROPER ERROR!
+                        System.err.println("File not found: " + path);
                     }
                 }
             });

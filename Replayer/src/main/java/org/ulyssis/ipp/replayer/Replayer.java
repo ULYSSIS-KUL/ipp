@@ -72,7 +72,7 @@ public final class Replayer implements Runnable {
                 System.out.println(String.format("Reader %d: %s", i, replayMap.get(i).toAbsolutePath()));
             }
         }
-        System.out.println("Press any key to continue (or ctrl-C to cancel)");
+        System.out.println("Press enter to continue (or ctrl-C to cancel)");
         try {
             System.in.read();
             System.out.println("Started replay!");

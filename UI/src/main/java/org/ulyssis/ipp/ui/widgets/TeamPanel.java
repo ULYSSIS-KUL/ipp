@@ -351,7 +351,6 @@ public class TeamPanel extends CollapsablePanel {
         correctionType.addItem("Penalty");
         correctionType.addItem("Other");
         correctionsView.bindWidget("correction-type", correctionType);
-        System.out.println("ja hallo?");
         correctionExplanation = new WLineEdit();
         correctionExplanation.setTextSize(80);
         correctionsView.bindWidget("correction-explanation", correctionExplanation);

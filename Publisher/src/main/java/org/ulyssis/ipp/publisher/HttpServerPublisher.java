@@ -64,12 +64,12 @@ public final class HttpServerPublisher extends Publisher implements Runnable {
         this.options = options;
         if (options.getKeystore().isPresent()) {
             server = Undertow.builder()
-                    .addHttpsListener(options.getPort(), "0.0.0.0", sslContext(), handler())
+                    .addHttpsListener(options.getPort(), options.getHost(), sslContext(), handler())
                     .setWorkerThreads(10)
                     .build();
         } else {
             server = Undertow.builder()
-                    .addHttpListener(options.getPort(), "0.0.0.0", handler())
+                    .addHttpListener(options.getPort(), options.getHost(), handler())
                     .setWorkerThreads(10)
                     .build();
         }

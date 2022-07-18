@@ -52,6 +52,9 @@ public final class PublisherOptions extends Options {
     @Option(name="-p", usage="The port to listen on", aliases={"--port"}, metaVar="<port>", required=false)
     private Integer port = null;
 
+    @Option(name="--host", usage="The host to listen on, if a port is also specified", metaVar="<host>", required=false)
+    private String host = "0.0.0.0";
+
     @Option(name="-o", usage="The file to write the score to", aliases={"--out", "--output"}, metaVar="<output>", required=false)
     private Path outputFile = null;
 
@@ -121,6 +124,8 @@ public final class PublisherOptions extends Options {
     public Integer getPort() {
         return port;
     }
+
+    public String getHost() { return host; }
 
     public Path getOutputFile() {
         return outputFile;

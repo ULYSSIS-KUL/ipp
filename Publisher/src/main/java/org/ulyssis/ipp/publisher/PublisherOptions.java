@@ -61,17 +61,8 @@ public final class PublisherOptions extends Options {
     @Option(name="--http", usage="The HTTP host to push the score to", metaVar="<uri>", required=false)
     private URL http = null;
 
-    @Option(name="--keystore", usage="The keystore to use (for HTTP server or client)", metaVar="<keystore>", required=false)
-    private Path keystore = null;
-
-    @Option(name="--keystore-pass", usage="The keystore password (for HTTP server or client)", metaVar="<pass>", required=false)
-    private String keystorePass = null;
-
-    @Option(name="--truststore", usage="The truststore to use (for HTTP server or client)", metaVar="<truststore>", required=false)
-    private Path truststore = null;
-
-    @Option(name="--truststore-pass", usage="The truststore password (for HTTP server or client)", metaVar="<pass>", required=false)
-    private String truststorePass = null;
+    @Option(name="--hmac-key-file", usage="The path to the file containing the HMAC key", metaVar="<hmacKeyFile>", required=false)
+    private Path hmacKeyFile = null;
 
     @Option(name="--tmpdir", usage="The temporary directory to use", metaVar="<tmpdir>", required=false)
     private Path tmpdir = null;
@@ -90,6 +81,14 @@ public final class PublisherOptions extends Options {
             }
             if (pOptions.getDatabaseUri() != null && pOptions.getPort() != null) {
                 message = "You can not both connect to a database, and listen on a port, choose one!";
+                return false;
+            }
+            if (pOptions.getPort() != null && pOptions.getHmacKeyFilePath() == null) {
+                message = "You must provide a HMAC key when listening on a port.";
+                return false;
+            }
+            if (pOptions.getHttp() != null && pOptions.getHmacKeyFilePath() == null) {
+                message = "You must provide a HMAC key when publishing to an HTTP endpoint.";
                 return false;
             }
             return true;
@@ -135,21 +134,7 @@ public final class PublisherOptions extends Options {
         return http;
     }
 
-    public Optional<Path> getKeystore() {
-        return Optional.ofNullable(keystore);
-    }
-
-    public String getKeystorePass() {
-        return keystorePass;
-    }
-
-    public Optional<Path> getTruststore() {
-        return Optional.ofNullable(truststore);
-    }
-
-    public String getTruststorePass() {
-        return truststorePass;
-    }
+    public Path getHmacKeyFilePath() { return hmacKeyFile; }
 
     public Optional<Path> getTmpDir() {
         return Optional.ofNullable(tmpdir);

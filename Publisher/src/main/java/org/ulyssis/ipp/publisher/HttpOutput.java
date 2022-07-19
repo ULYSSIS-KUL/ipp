@@ -20,29 +20,24 @@ package org.ulyssis.ipp.publisher;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ulyssis.ipp.utils.Serialization;
 
-import javax.net.ssl.SSLContext;
-import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyStore;
+import java.nio.file.Files;
 
 public final class HttpOutput implements ScoreOutput {
     private static final Logger LOG = LogManager.getLogger(HttpOutput.class);
     private final PublisherOptions options;
+    private final byte[] hmacKey;
 
-    private final SSLConnectionSocketFactory sslConnectionSocketFactory;
 
     private CloseableHttpClient httpClient;
 
@@ -51,52 +46,26 @@ public final class HttpOutput implements ScoreOutput {
      *
      * Can use a private key for client SSL authentication.
      */
-    public HttpOutput(PublisherOptions options) {
+    public HttpOutput(PublisherOptions options) throws IOException {
         this.options = options;
-        sslConnectionSocketFactory = new SSLConnectionSocketFactory(
-                createSslCustomContext(),
-                new String[]{"TLSv1"},
-                null,
-                SSLConnectionSocketFactory.getDefaultHostnameVerifier());
+        hmacKey = Files.readAllBytes(options.getHmacKeyFilePath());
     }
 
-    private SSLContext createSslCustomContext() {
-        try {
-            SSLContextBuilder builder = SSLContexts.custom();
-            if (options.getKeystore().isPresent()) {
-                KeyStore cks = KeyStore.getInstance(KeyStore.getDefaultType());
-                cks.load(new FileInputStream(options.getKeystore().get().toFile()), options.getKeystorePass().toCharArray());
-                builder.loadKeyMaterial(cks, options.getKeystorePass().toCharArray());
-            }
-
-            if (options.getTruststore().isPresent()) {
-                KeyStore tks = KeyStore.getInstance(KeyStore.getDefaultType());
-                tks.load(new FileInputStream(options.getTruststore().get().toFile()), options.getTruststorePass().toCharArray());
-                builder.loadTrustMaterial(tks, new TrustSelfSignedStrategy());
-            }
-
-            if (!options.getKeystore().isPresent() && !options.getKeystore().isPresent()) {
-                return SSLContext.getDefault();
-            }
-
-            return builder.build();
-        } catch (Exception e) {
-            // TODO: DO SOMETHING WITH THE EXCEPTION!
-            LOG.error("Exception", e);
-        }
-        return null;
-    }
 
     @Override
     public void outputScore(Score score) {
         if (httpClient == null)
-            httpClient = HttpClients.custom().setSSLSocketFactory(sslConnectionSocketFactory).build();
+            httpClient = HttpClients.createDefault();
 
         try {
             HttpPost req = new HttpPost(options.getHttp().toURI());
             byte[] scoreBytes = Serialization.getJsonMapper().writeValueAsBytes(score);
             HttpEntity ent = new ByteArrayEntity(scoreBytes, ContentType.APPLICATION_JSON);
             req.setEntity(ent);
+
+            String hmac = Hmac.generateHmac(scoreBytes, hmacKey);
+            req.setHeader("X-Hmac", hmac);
+
             try (CloseableHttpResponse response = httpClient.execute(req)) {
                 if (response.getStatusLine().getStatusCode() != 200) {
                     LOG.error("Received non-success result! Status code was {} {}",

@@ -21,34 +21,17 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
-import io.undertow.security.api.AuthenticationMode;
-import io.undertow.security.handlers.AuthenticationCallHandler;
-import io.undertow.security.handlers.AuthenticationConstraintHandler;
-import io.undertow.security.handlers.AuthenticationMechanismsHandler;
-import io.undertow.security.handlers.SecurityInitialHandler;
-import io.undertow.security.idm.Account;
-import io.undertow.security.idm.Credential;
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.security.impl.ClientCertAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.HttpString;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.apache.http.ssl.SSLContexts;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ulyssis.ipp.utils.Serialization;
 
-import javax.net.ssl.SSLContext;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.security.KeyStore;
-import java.security.Principal;
-import java.util.Collections;
+import java.io.*;
+import java.nio.file.Files;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * A publisher that uses HTTP POST requests as the source.
@@ -58,21 +41,16 @@ public final class HttpServerPublisher extends Publisher implements Runnable {
 
     private final Undertow server;
     private final PublisherOptions options;
+    private final byte[] hmacKey;
 
-    public HttpServerPublisher(PublisherOptions options) {
+    public HttpServerPublisher(PublisherOptions options) throws IOException {
         super(options);
         this.options = options;
-        if (options.getKeystore().isPresent()) {
-            server = Undertow.builder()
-                    .addHttpsListener(options.getPort(), options.getHost(), sslContext(), handler())
-                    .setWorkerThreads(10)
-                    .build();
-        } else {
-            server = Undertow.builder()
-                    .addHttpListener(options.getPort(), options.getHost(), handler())
-                    .setWorkerThreads(10)
-                    .build();
-        }
+        hmacKey = Files.readAllBytes(options.getHmacKeyFilePath());
+        server = Undertow.builder()
+                .addHttpListener(options.getPort(), options.getHost(), handler())
+                .setWorkerThreads(10)
+                .build();
     }
 
     private static final class InfoHandler implements HttpHandler {
@@ -104,11 +82,27 @@ public final class HttpServerPublisher extends Publisher implements Runnable {
                 String contentType = Optional.ofNullable(exchange.getRequestHeaders().get("Content-Type")).map(HeaderValues::getFirst).orElse(null);
                 if (contentType != null && contentType.startsWith("application/json")) {
                     try {
+                        String mac = exchange.getRequestHeaders().getFirst("X-Hmac");
+
                         exchange.startBlocking();
-                        Score score = Serialization.getJsonMapper().readValue(exchange.getInputStream(), Score.class);
-                        outputScore(score);
-                        exchange.setResponseCode(200);
-                        exchange.getResponseSender().send("SUCCESS");
+
+                        ByteArrayOutputStream os = new ByteArrayOutputStream();
+                        byte[] buffer = new byte[1024];
+                        InputStream is = exchange.getInputStream();
+                        for (int length; (length = is.read(buffer)) != -1; ) {
+                            os.write(buffer, 0, length);
+                        }
+                        byte[] body = os.toByteArray();
+
+                        if (Hmac.verifyHmac(mac, body, hmacKey)) {
+                            Score score = Serialization.getJsonMapper().readValue(body, Score.class);
+                            outputScore(score);
+                            exchange.setResponseCode(200);
+                            exchange.getResponseSender().send("SUCCESS");
+                        } else {
+                            exchange.setResponseCode(400);
+                            exchange.getResponseSender().send("Invalid HMAC");
+                        }
                     } catch (JsonParseException e) {
                         LOG.error("Couldn't parse JSON", e);
                         exchange.setResponseCode(400);
@@ -133,70 +127,11 @@ public final class HttpServerPublisher extends Publisher implements Runnable {
         }
     }
 
-    private SSLContext sslContext() {
-        try {
-            KeyStore cks = KeyStore.getInstance(KeyStore.getDefaultType());
-            cks.load(new FileInputStream(options.getKeystore().get().toFile()),
-                    options.getKeystorePass().toCharArray());
-            SSLContextBuilder builder = SSLContexts.custom();
-            if (options.getTruststore().isPresent()) {
-                KeyStore tks = KeyStore.getInstance(KeyStore.getDefaultType());
-                tks.load(new FileInputStream(options.getTruststore().get().toFile()),
-                        options.getTruststorePass().toCharArray());
-                builder.loadTrustMaterial(tks, new TrustSelfSignedStrategy());
-            }
-            return builder
-                    .loadKeyMaterial(cks, options.getKeystorePass().toCharArray())
-                    .build();
-        } catch (Exception e) {
-            // TODO: DO SOMETHING WITH THE EXCEPTION!
-            LOG.error("Exception", e);
-        }
-        return null;
-    }
-
-    private static IdentityManager identityManager = new IdentityManager() {
-        private final Principal principal = () -> "ROOT";
-
-        @Override
-        public Account verify(Account account) {
-            return null;
-        }
-
-        @Override
-        public Account verify(String id, Credential credential) {
-            return null;
-        }
-
-        @Override
-        public Account verify(Credential credential) {
-            return new Account() {
-                @Override
-                public Principal getPrincipal() {
-                    return principal;
-                }
-
-                @Override
-                public Set<String> getRoles() {
-                    return Collections.emptySet();
-                }
-            };
-        }
-    };
 
     private HttpHandler handler() {
-        HttpHandler handler = Handlers.path()
+        return Handlers.path()
                 .addExactPath("/", new InfoHandler())
                 .addExactPath("/update", new UpdateHandler());
-        if (options.getKeystore().isPresent() && options.getTruststore().isPresent()) {
-            return new SecurityInitialHandler(AuthenticationMode.CONSTRAINT_DRIVEN, identityManager,
-                new AuthenticationMechanismsHandler(
-                        new AuthenticationConstraintHandler(
-                                new AuthenticationCallHandler(handler)),
-                        Collections.singletonList(new ClientCertAuthenticationMechanism())));
-        } else {
-            return handler;
-        }
     }
 
     @Override

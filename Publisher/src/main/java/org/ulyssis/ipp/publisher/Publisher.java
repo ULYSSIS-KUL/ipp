@@ -20,6 +20,7 @@ package org.ulyssis.ipp.publisher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.util.List;
 
 public abstract class Publisher implements ScoreOutput {
@@ -27,7 +28,7 @@ public abstract class Publisher implements ScoreOutput {
 
     private final List<ScoreOutput> scoreOutputs;
 
-    public Publisher(PublisherOptions options) {
+    public Publisher(PublisherOptions options) throws IOException {
         scoreOutputs = ScoreOutput.outputsFromOptions(options);
     }
 

@@ -17,6 +17,7 @@
  */
 package org.ulyssis.ipp.publisher;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,7 +27,7 @@ import java.util.List;
  * on via HTTP.
  */
 public interface ScoreOutput {
-    static List<ScoreOutput> outputsFromOptions(PublisherOptions options) {
+    static List<ScoreOutput> outputsFromOptions(PublisherOptions options) throws IOException {
         List<ScoreOutput> result = new ArrayList<>();
         if (options.getHttp() != null) {
             result.add(new HttpOutput(options));

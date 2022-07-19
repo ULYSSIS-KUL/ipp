@@ -83,7 +83,7 @@ public final class DatabasePublisher extends Publisher implements Runnable {
         semaphore.release();
     }
 
-    public DatabasePublisher(PublisherOptions options) {
+    public DatabasePublisher(PublisherOptions options) throws IOException {
         super(options);
         this.options = options;
         Database.setDatabaseURI(options.getDatabaseUri());

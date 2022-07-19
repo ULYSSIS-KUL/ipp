@@ -22,6 +22,8 @@ import org.apache.logging.log4j.Logger;
 import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.runtime.Runner;
 
+import java.io.IOException;
+
 public final class Main {
     private static final Logger LOG = LogManager.getLogger(Main.class);
 
@@ -35,10 +37,18 @@ public final class Main {
                     Config.setCurrentConfig(config);
                     if (options.getSource() == PublisherOptions.Source.HTTP) {
                         LOG.info("Creating HttpServerPublisher");
-                        runner.addRunnable(new HttpServerPublisher(options));
+                        try {
+                            runner.addRunnable(new HttpServerPublisher(options));
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
                     } else {
                         LOG.info("Creating DatabasePublisher");
-                        runner.addRunnable(new DatabasePublisher(options));
+                        try {
+                            runner.addRunnable(new DatabasePublisher(options));
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                     runner.run();
                 });

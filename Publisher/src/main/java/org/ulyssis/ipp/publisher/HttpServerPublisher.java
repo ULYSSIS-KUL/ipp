@@ -96,7 +96,7 @@ public final class HttpServerPublisher extends Publisher implements Runnable {
 
                         if (Hmac.verifyHmac(mac, body, hmacKey)) {
                             Score score = Serialization.getJsonMapper().readValue(body, Score.class);
-                            outputScore(score);
+                            outputOrWithholdScore(score, options);
                             exchange.setResponseCode(200);
                             exchange.getResponseSender().send("SUCCESS");
                         } else {
@@ -127,11 +127,11 @@ public final class HttpServerPublisher extends Publisher implements Runnable {
         }
     }
 
-
     private HttpHandler handler() {
         return Handlers.path()
                 .addExactPath("/", new InfoHandler())
-                .addExactPath("/update", new UpdateHandler());
+                .addExactPath("/update", new UpdateHandler())
+                .addExactPath("/final", new HttpServerPublisherFinalScoreUI(this, options));
     }
 
     @Override

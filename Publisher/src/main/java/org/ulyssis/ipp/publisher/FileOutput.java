@@ -33,7 +33,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Optional;
 import java.util.Set;
 
-public final class FileOutput implements ScoreOutput {
+public final class FileOutput extends ScoreOutput {
     private static final Logger LOG = LogManager.getLogger(FileOutput.class);
     // TODO: Do these permissions work on Windows?
     private static final Set<PosixFilePermission> defaultPerms = PosixFilePermissions.fromString("rw-r--r--");

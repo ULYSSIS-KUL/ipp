@@ -23,7 +23,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.util.List;
 
-public abstract class Publisher implements ScoreOutput {
+public abstract class Publisher extends ScoreOutput {
     private static final Logger LOG = LogManager.getLogger(Publisher.class);
 
     private final List<ScoreOutput> scoreOutputs;

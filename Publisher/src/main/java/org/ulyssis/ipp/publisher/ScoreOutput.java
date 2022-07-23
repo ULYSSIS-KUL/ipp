@@ -17,6 +17,8 @@
  */
 package org.ulyssis.ipp.publisher;
 
+import org.ulyssis.ipp.updates.Status;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,7 +28,9 @@ import java.util.List;
  * A score output interface. Multiple implementations exist, for outputting scores to files or passing them
  * on via HTTP.
  */
-public interface ScoreOutput {
+public abstract class ScoreOutput {
+    Score withheldFinalScore = null;
+
     static List<ScoreOutput> outputsFromOptions(PublisherOptions options) throws IOException {
         List<ScoreOutput> result = new ArrayList<>();
         if (options.getHttp() != null) {
@@ -38,13 +42,31 @@ public interface ScoreOutput {
         return Collections.unmodifiableList(result);
     }
 
+    void outputOrWithholdScore(Score score, PublisherOptions options) {
+        if (score.getStatus() != Status.FinalScore || !options.shouldWithholdFinalScores()) {
+            outputScore(score);
+        } else {
+            withheldFinalScore = score;
+        }
+    }
+
+    Score getWithheldFinalScore() {
+        return withheldFinalScore;
+    }
+
+    void outputWithheldScore() {
+        if (withheldFinalScore == null) return;
+        outputScore(withheldFinalScore);
+        withheldFinalScore = null;
+    }
+
     /**
      * Outputs the given score.
      */
-    void outputScore(Score score);
+    abstract void outputScore(Score score);
 
     /**
      * Called at the end, allows for the score output to clean itself up, e.g. close upstream HTTP connections.
      */
-    void cleanup();
+    abstract void cleanup();
 }

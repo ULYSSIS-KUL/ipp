@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
-public final class HttpOutput implements ScoreOutput {
+public final class HttpOutput extends ScoreOutput {
     private static final Logger LOG = LogManager.getLogger(HttpOutput.class);
     private final PublisherOptions options;
     private final byte[] hmacKey;

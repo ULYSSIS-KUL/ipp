@@ -67,6 +67,12 @@ public final class PublisherOptions extends Options {
     @Option(name="--tmpdir", usage="The temporary directory to use", metaVar="<tmpdir>", required=false)
     private Path tmpdir = null;
 
+    @Option(name="--withhold-final-scores", usage="Do not immediately publish final scores, but wait for a button press in the Publisher's web UI. Only usable when the Publisher listens on a port.")
+    private boolean withholdFinalScores = false;
+
+    @Option(name="--final-score-ui-credentials", usage="Credentials to access the final score UI if final scores are withheld. Format should be username:password", required = false)
+    private String finalScoreUiCredentials = null;
+
     private static final ExtraCondition condition = new ExtraCondition() {
         @Override
         public boolean evaluate(Options options) {
@@ -89,6 +95,18 @@ public final class PublisherOptions extends Options {
             }
             if (pOptions.getHttp() != null && pOptions.getHmacKeyFilePath() == null) {
                 message = "You must provide a HMAC key when publishing to an HTTP endpoint.";
+                return false;
+            }
+            if (pOptions.shouldWithholdFinalScores() && pOptions.getPort() == null) {
+                message = "Withholding final scores is only possible when the Publisher listens on a port.";
+                return false;
+            }
+            if (pOptions.shouldWithholdFinalScores() && pOptions.getFinalScoreUICredentials() == null) {
+                message = "Credentials for the final score UI must be provided if the final scores are withheld until manual action.";
+                return false;
+            }
+            if (pOptions.getFinalScoreUICredentials() != null && !pOptions.getFinalScoreUICredentials().contains(":")) {
+                message = "Invalid format for final score UI credentials, should be username:password";
                 return false;
             }
             return true;
@@ -138,5 +156,13 @@ public final class PublisherOptions extends Options {
 
     public Optional<Path> getTmpDir() {
         return Optional.ofNullable(tmpdir);
+    }
+
+    public boolean shouldWithholdFinalScores() {
+        return withholdFinalScores;
+    }
+
+    public String getFinalScoreUICredentials() {
+        return finalScoreUiCredentials;
     }
 }

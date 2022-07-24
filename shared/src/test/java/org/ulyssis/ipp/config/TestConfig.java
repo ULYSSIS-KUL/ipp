@@ -79,6 +79,7 @@ public class TestConfig {
         assertEquals("10.0.0.6", config.getReader(2).getURI().getHost());
         assertEquals(ReaderConfig.Type.LLRP, config.getReader(2).getType());
         assertEquals(440D, config.getReader(2).getPosition(), 0D);
+        assertEquals(35.25, config.getMaxSpeedKmPerH(), 0D);
     }
 
     @Test
@@ -100,6 +101,7 @@ public class TestConfig {
         assertEquals(new TagId("0C"), config.getReader(0).getSimulatedTeam(2).getTag());
         assertEquals(4000L, config.getReader(0).getSimulatedTeam(3).getLapTime());
         assertEquals(new TagId("0D"), config.getReader(0).getSimulatedTeam(3).getTag());
+        assertEquals(44.72, config.getMaxSpeedKmPerH(), 0D);
     }
 
     @Test
@@ -141,5 +143,23 @@ public class TestConfig {
     public void testNameNaamMixup() throws Exception {
         exception.expect(UnrecognizedPropertyException.class);
         Serialization.getJsonMapper().readValue("{\"teamNb\":3,\"naam\":\"My team\"}", Team.class);
+    }
+
+    @Test
+    public void testDistanceCalculation() {
+        Optional<Config> conf = Config.fromConfigurationFile(Paths.get("src/test/resources/test1.json"));
+        Config config = conf.get();
+
+        assertThat(config.distanceBetweenTwoReaders(0, 1), equalTo(220D));
+        assertThat(config.distanceBetweenTwoReaders(1, 2), equalTo(220D));
+        assertThat(config.distanceBetweenTwoReaders(0, 2), equalTo(440D));
+
+        assertThat(config.distanceBetweenTwoReaders(2, 0), equalTo(80D));
+        assertThat(config.distanceBetweenTwoReaders(2, 1), equalTo(300D));
+        assertThat(config.distanceBetweenTwoReaders(1, 0), equalTo(300D));
+
+        assertThat(config.distanceBetweenTwoReaders(0, 0), equalTo(520D));
+        assertThat(config.distanceBetweenTwoReaders(1, 1), equalTo(520D));
+        assertThat(config.distanceBetweenTwoReaders(2, 2), equalTo(520D));
     }
 }

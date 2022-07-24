@@ -54,6 +54,7 @@ public class Config {
     private String updatesList = "updates";
     private String updatesSet = "updates";
     private String controlChannel = "control";
+    private double maxSpeedKmPerH = 44.72D; // Default value here is Usain Bolt's top speed
 
     /**
      * Private constructor used by Jackson
@@ -204,6 +205,14 @@ public class Config {
         return teams;
     }
 
+    /**
+     * Maximum valid speed, reads will be rejected if the speed between two readers
+     * was higher than this value.
+     */
+    public double getMaxSpeedKmPerH() {
+        return maxSpeedKmPerH;
+    }
+
     // TODO: Maybe find some other solution?
     private static Config currentConfig;
 
@@ -213,5 +222,19 @@ public class Config {
 
     public static Config getCurrentConfig() {
         return currentConfig;
+    }
+
+    /**
+     * Calculates distance between two readers in the direction of the course. If the two given readers are the same,
+     * the length of a full lap is returned.
+     */
+    public double distanceBetweenTwoReaders(int firstId, int secondId) {
+        double firstPos = readers.get(firstId).getPosition();
+        double secondPos = readers.get(secondId).getPosition();
+        if (firstId < secondId) {
+            return secondPos - firstPos;
+        } else {
+            return trackLength - firstPos + secondPos;
+        }
     }
 }

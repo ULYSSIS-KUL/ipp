@@ -129,10 +129,13 @@ public final class TeamState {
         int lastEventId = 0;
         if (lastTagSeenEvent.isPresent()) {
             TagSeenEvent lastEvent = lastTagSeenEvent.get();
-            if (lastEvent.getReaderId() == event.getReaderId() &&
-                    Duration.between(lastEvent.getTime(), event.getTime()).minusSeconds(MIN_TIME_BETWEEN_UPDATES).isNegative()) {
-                LOG.info("Rejecting event because a tag for this team passed less than {} seconds ago",
-                        MIN_TIME_BETWEEN_UPDATES);
+            double secondsDiff = Duration.between(lastEvent.getTime(), event.getTime()).toMillis() / 1000.0;
+            double distanceInMeters = Config.getCurrentConfig().distanceBetweenTwoReaders(lastEvent.getReaderId(), event.getReaderId());
+            double speedInMPerS = distanceInMeters / secondsDiff;
+            double speedInKmPerH = speedInMPerS * 3.6;
+            if (speedInKmPerH > Config.getCurrentConfig().getMaxSpeedKmPerH()) {
+                LOG.info("Rejecting event because the measured speed is {} km/h, higher than the max value {} km/h",
+                        speedInKmPerH, Config.getCurrentConfig().getMaxSpeedKmPerH());
                 return this;
             }
             lastEventId = lastEvent.getReaderId();

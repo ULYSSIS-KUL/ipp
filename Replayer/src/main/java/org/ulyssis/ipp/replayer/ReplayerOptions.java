@@ -41,6 +41,9 @@ public final class ReplayerOptions extends Options {
             metaVar="<redis uri>")
     private URI uri = URI.create("redis://127.0.0.1");
 
+    @Option(name="--speed", usage="Speed factor so the replay can run faster (>1) or slower (<1)")
+    private double speedFactor = 1D;
+
     private SortedMap<Integer,Path> replayMap = new TreeMap<>();
 
     private ReplayerOptions() {
@@ -97,5 +100,9 @@ public final class ReplayerOptions extends Options {
 
     public URI getRedisURI() {
         return uri;
+    }
+
+    public double getSpeedFactor() {
+        return speedFactor;
     }
 }

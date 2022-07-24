@@ -61,7 +61,8 @@ public final class Replayer implements Runnable {
 
     @Override
     public void run() {
-        Duration offset = null;
+        long offset = -1;
+        Instant firstRead = null;
         System.out.println("Will run the replayer with the following replay files:");
         Config config = Config.getCurrentConfig();
         int nbReaders = config.getNbReaders();
@@ -91,11 +92,15 @@ public final class Replayer implements Runnable {
                     }
                 }
                 if (first != null) {
-                    if (offset == null) {
-                        offset = Duration.between(firstInstant.get(), Instant.now());
-                    }
                     TagUpdate update = first.next().get();
-                    Instant newUpdateTime = update.getUpdateTime().plus(offset);
+                    if (offset == -1) {
+                        offset = Instant.now().toEpochMilli();
+                        firstRead = update.getUpdateTime();
+                    }
+                    Instant newUpdateTime = Instant.ofEpochMilli(
+                            offset +
+                            Math.round(Duration.between(firstRead, update.getUpdateTime()).toMillis() / options.getSpeedFactor())
+                    );
                     TagUpdate updateToPush = new TagUpdate(update.getReaderId(),
                             update.getUpdateCount(),
                             newUpdateTime,

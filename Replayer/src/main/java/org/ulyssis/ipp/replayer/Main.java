@@ -22,13 +22,17 @@ import org.ulyssis.ipp.runtime.Runner;
 
 // TODO: Replay files
 // TODO: With an offset (X minutes until we send the first sample)
-// TODO: With time scaling, NOTE: this changes rejection of events!
 public final class Main {
     public static void main(String[] args) {
         Runner runner = new Runner();
         try {
             ReplayerOptions.replayerOptionsFromArgs(args).ifPresent(options ->
                 Config.fromConfigurationFile(options.getConfigFile()).ifPresent(config -> {
+                    if (options.getSpeedFactor() != 1D) {
+                        System.out.println("Speed factor is not equal to 1 - remember to " +
+                                "adjust `maxSpeedKmPerH` in the Processor config accordingly!");
+                        // TODO: Maybe there is a cleaner way than requiring the user to do the above.
+                    }
                     Config.setCurrentConfig(config);
                     runner.addRunnable(new Replayer(options));
                     runner.run();

@@ -21,7 +21,6 @@ import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.runtime.Runner;
 
 // TODO: Replay files
-// TODO: With an offset (X minutes until we send the first sample)
 public final class Main {
     public static void main(String[] args) {
         Runner runner = new Runner();

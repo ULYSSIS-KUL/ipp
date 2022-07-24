@@ -44,6 +44,9 @@ public final class ReplayerOptions extends Options {
     @Option(name="--speed", usage="Speed factor so the replay can run faster (>1) or slower (<1)")
     private double speedFactor = 1D;
 
+    @Option(name="--delay", usage="Delay the first read by the given number of minutes.")
+    private double delayMinutes = 0D;
+
     private SortedMap<Integer,Path> replayMap = new TreeMap<>();
 
     private ReplayerOptions() {
@@ -104,5 +107,9 @@ public final class ReplayerOptions extends Options {
 
     public double getSpeedFactor() {
         return speedFactor;
+    }
+
+    public double getDelayMinutes() {
+        return delayMinutes;
     }
 }

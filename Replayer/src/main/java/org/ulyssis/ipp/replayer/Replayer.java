@@ -94,7 +94,7 @@ public final class Replayer implements Runnable {
                 if (first != null) {
                     TagUpdate update = first.next().get();
                     if (offset == -1) {
-                        offset = Instant.now().toEpochMilli();
+                        offset = Instant.now().plusMillis((long)(options.getDelayMinutes() * 60 * 1000)).toEpochMilli();
                         firstRead = update.getUpdateTime();
                     }
                     Instant newUpdateTime = Instant.ofEpochMilli(

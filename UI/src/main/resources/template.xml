@@ -46,6 +46,7 @@
         <div>${correction-spinner}</div>
         <div class="margin-top margin-bottom">${correction-type}: ${correction-explanation}</div>
         <div>${commit-button}</div>
+        <p>Note: Applying a punishment? You still have to enter a negative number in the input box, even if that seems implied by the definition of a punishment.</p>
     </message>
     <message id="reads-view">
         ${refresh-button}

@@ -106,7 +106,7 @@ body {
 .teams-menu > li > a {
     float: left;
     display: block;
-    width: 300px;
+    width: 200px;
     background-color: black;
     cursor: pointer;
     cursor: hand;

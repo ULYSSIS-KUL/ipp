@@ -39,6 +39,7 @@ import org.ulyssis.ipp.snapshot.Snapshot;
 import org.ulyssis.ipp.snapshot.Event;
 import org.ulyssis.ipp.snapshot.TagSeenEvent;
 import org.ulyssis.ipp.snapshot.TeamState;
+import org.ulyssis.ipp.status.StatusMessage;
 import org.ulyssis.ipp.ui.UIApplication;
 import org.ulyssis.ipp.ui.state.SharedState;
 
@@ -47,6 +48,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -61,6 +64,7 @@ public class TeamPanel extends CollapsablePanel {
     private final WContainerWidget chartContainer;
     private final WTemplate tagsView;
     private final WTemplate correctionsView;
+    private final WTemplate readsView;
     
     private final WContainerWidget tagsTable;
     private final WLineEdit addTagEdit;
@@ -70,6 +74,72 @@ public class TeamPanel extends CollapsablePanel {
     private final WComboBox correctionType;
     private final WLineEdit correctionExplanation;
     private final WPushButton addCorrection;
+
+    private final WPushButton readsRefreshButton;
+    private final WTableView readsTable;
+    private final ReadsTable readsModel;
+
+    private static final class ReadsTable extends WAbstractTableModel {
+        private final List<TagSeenEvent> events = new ArrayList<>();
+
+        public void addEvent(TagSeenEvent event) {
+            beginInsertRows(null, 0, 0);
+            events.add(event);
+            endInsertRows();
+        }
+
+        public void clearEvents() {
+            beginRemoveRows(null, 0, events.size() - 1);
+            events.clear();
+            endRemoveRows();
+        }
+
+        @Override
+        public int getColumnCount(WModelIndex parent) {
+            return 3;
+        }
+
+        @Override
+        public int getRowCount(WModelIndex parent) {
+            return events.size();
+        }
+
+        @Override
+        public Object getData(WModelIndex index, int role) {
+            if (index.getColumn() >= 3)
+                return null;
+            if (index.getRow() >= events.size())
+                return null;
+            if (role != ItemDataRole.DisplayRole)
+                return null;
+
+            int i = events.size() - index.getRow() - 1;
+            if (index.getColumn() == 0) {
+                // TODO: Not just Europe/Brussels!
+                return LocalDateTime.ofInstant(events.get(i).getTime(), ZoneId.systemDefault()).toString();
+            } else if (index.getColumn() == 1) {
+                return events.get(i).getReaderId();
+            } else if (index.getColumn() == 2) {
+                return events.get(i).getTag();
+            }
+
+            return null;
+        }
+
+        @Override
+        public Object getHeaderData(int section, Orientation orientation, int role) {
+            if (orientation == Orientation.Horizontal && role == ItemDataRole.DisplayRole) {
+                if (section == 0) {
+                    return "Time";
+                } else if (section == 1) {
+                    return "Reader";
+                } else if (section == 2) {
+                    return "Tag";
+                }
+            }
+            return super.getHeaderData(section, orientation, role);
+        }
+    }
     
     private final WProgressBar projectedProgress;
     private final WProgressBar actualProgress;
@@ -289,10 +359,12 @@ public class TeamPanel extends CollapsablePanel {
         tagsView.addStyleClass("tags-view");
         correctionsView = new WTemplate(WString.tr("corrections-view"));
         correctionsView.addStyleClass("corrections-view");
+        readsView = new WTemplate(WString.tr("reads-view"));
 
         menu.addItem("Charts", chartContainer);
         menu.addItem("Tags", tagsView);
         menu.addItem("Corrections", correctionsView);
+        menu.addItem("Reads", readsView);
         
         content.addWidget(menu);
         content.addWidget(stack);
@@ -354,6 +426,20 @@ public class TeamPanel extends CollapsablePanel {
         correctionsView.bindWidget("commit-button", addCorrection);
         addCorrection.clicked().addListener(this, this::performCorrection);
 
+        readsTable = new WTableView();
+        readsModel = new ReadsTable();
+        readsTable.setModel(readsModel);
+        readsTable.setHeight(new WLength(180));
+        readsTable.setWidth(new WLength(800));
+        readsTable.setColumnWidth(0, new WLength(200));
+        readsTable.setColumnWidth(2, new WLength(600));
+        readsTable.setSortingEnabled(false);
+        readsRefreshButton = new WPushButton();
+        readsRefreshButton.setText("Refresh");
+        readsRefreshButton.clicked().addListener(this, this::refreshReads);
+        readsView.bindWidget("table-view", readsTable);
+        readsView.bindWidget("refresh-button", readsRefreshButton);
+
         sharedState.addScoreListener(application, scoreListener);
     }
     
@@ -366,6 +452,24 @@ public class TeamPanel extends CollapsablePanel {
     	} catch (IllegalArgumentException e) {
     		// TODO: Handle decoding exception!
     	}
+    }
+
+    private void refreshReads() {
+        Instant now = Instant.now();
+        Instant fifteenMinsAgo = now.minus(Duration.ofMinutes(15L));
+        try (Connection connection = Database.createConnection(EnumSet.of(Database.ConnectionFlags.READ_ONLY))) {
+            List<Event> events = Event.loadFrom(connection, fifteenMinsAgo);
+            readsModel.clearEvents();
+            for (Event e : events) {
+                if (e instanceof TagSeenEvent && team.getTags().contains(((TagSeenEvent) e).getTag())) {
+                    readsModel.addEvent((TagSeenEvent) e);
+                }
+            }
+        } catch (SQLException e) {
+            LOG.error("Couldn't fetch events", e);
+        } catch (IOException e) {
+            LOG.error("Error processing events", e);
+        }
     }
     
     private void performCorrection() {

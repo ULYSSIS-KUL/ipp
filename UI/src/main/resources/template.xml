@@ -47,6 +47,10 @@
         <div class="margin-top margin-bottom">${correction-type}: ${correction-explanation}</div>
         <div>${commit-button}</div>
     </message>
+    <message id="reads-view">
+        ${refresh-button}
+        ${table-view}
+    </message>
     <message id="safety-button">
     	${safety} ${button}
     </message>

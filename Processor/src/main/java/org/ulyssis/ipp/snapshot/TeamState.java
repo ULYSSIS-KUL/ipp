@@ -136,8 +136,8 @@ public final class TeamState {
             double speedInMPerS = distanceInMeters / secondsDiff;
             double speedInKmPerH = speedInMPerS * 3.6;
             if (enableOutlierDetection && speedInKmPerH > Config.getCurrentConfig().getOutlierSpeedKmPerH()) {
-                LOG.info("Rejecting event because the measured speed is {} km/h, higher than the max value {} km/h",
-                        speedInKmPerH, Config.getCurrentConfig().getOutlierSpeedKmPerH());
+                LOG.info("Marking read as outlier because the measured speed is {} km/h, higher than the max value {} km/h. (Tag {}, reader {}, event {})",
+                        speedInKmPerH, Config.getCurrentConfig().getOutlierSpeedKmPerH(), event.getTag(), event.getReaderId(), event.getId());
                 // TODO: better way to do this side effect than just running a task from this method? Affects architecture around Event.doApply though
                 CompletableFuture.runAsync(() -> reportOutlier(event));
             }

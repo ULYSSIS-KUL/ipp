@@ -79,7 +79,7 @@ public class TestConfig {
         assertEquals("10.0.0.6", config.getReader(2).getURI().getHost());
         assertEquals(ReaderConfig.Type.LLRP, config.getReader(2).getType());
         assertEquals(440D, config.getReader(2).getPosition(), 0D);
-        assertEquals(35.25, config.getMaxSpeedKmPerH(), 0D);
+        assertEquals(35.25, config.getOutlierSpeedKmPerH(), 0D);
     }
 
     @Test
@@ -101,7 +101,7 @@ public class TestConfig {
         assertEquals(new TagId("0C"), config.getReader(0).getSimulatedTeam(2).getTag());
         assertEquals(4000L, config.getReader(0).getSimulatedTeam(3).getLapTime());
         assertEquals(new TagId("0D"), config.getReader(0).getSimulatedTeam(3).getTag());
-        assertEquals(44.72, config.getMaxSpeedKmPerH(), 0D);
+        assertEquals(34D, config.getOutlierSpeedKmPerH(), 0D);
     }
 
     @Test

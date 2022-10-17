@@ -75,6 +75,10 @@ public final class StatusMessage {
          */
         NEW_SNAPSHOT,
         /**
+         * Signals that a read has been rejected
+         */
+        READ_OUTLIER,
+        /**
          * Signals a miscellaneous error. The details field will contain more information
          * about the error.
          */

@@ -38,16 +38,11 @@ import org.ulyssis.ipp.publisher.Score;
 import org.ulyssis.ipp.snapshot.Snapshot;
 import org.ulyssis.ipp.snapshot.Event;
 import org.ulyssis.ipp.snapshot.TagSeenEvent;
+import org.ulyssis.ipp.snapshot.TeamState;
 import org.ulyssis.ipp.ui.UIApplication;
 import org.ulyssis.ipp.ui.state.SharedState;
-import org.ulyssis.ipp.utils.Serialization;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-
-import javax.xml.crypto.Data;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
@@ -208,6 +203,7 @@ public class TeamPanel extends CollapsablePanel {
     
     // TODO: This shouldn't be entirely based on the latest snapshot... also, share this info!
     private void updateCharts() {
+        TeamState.enableOutlierDetection = false;
     	Instant now = Instant.now();
     	Instant anHourAgo = now.minus(Duration.ofHours(1L));
     	try (Connection connection = Database.createConnection(EnumSet.of(Database.ConnectionFlags.READ_ONLY))) {

@@ -164,3 +164,26 @@ body {
 .margin-bottom {
     margin-bottom: 1em;
 }
+
+.notification-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: calc((100vw - 1000px) / 2);
+}
+
+.notification-container > div {
+    margin-top: 2em;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 1em;
+    color: white;
+    background: purple;
+    width: 85%;
+    font-weight: bold;
+    font-size: small;
+}
+
+.close-button {
+    font-weight: bold;
+}

@@ -31,13 +31,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.config.ReaderConfig;
+import org.ulyssis.ipp.status.StatusMessage;
+import org.ulyssis.ipp.status.StatusReporter;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @JsonSerialize(using=TeamState.Serializer.class)
 @JsonDeserialize(using=TeamState.Deserializer.class)
@@ -47,6 +47,8 @@ public final class TeamState {
     // TODO: Make these configurable!
     private static final double ALPHA = 0.4;
     private static final long MIN_TIME_BETWEEN_UPDATES = 30L;
+
+    public static boolean enableOutlierDetection = true;
 
     static class Serializer extends JsonSerializer<TeamState> {
         @Override
@@ -133,10 +135,11 @@ public final class TeamState {
             double distanceInMeters = Config.getCurrentConfig().distanceBetweenTwoReaders(lastEvent.getReaderId(), event.getReaderId());
             double speedInMPerS = distanceInMeters / secondsDiff;
             double speedInKmPerH = speedInMPerS * 3.6;
-            if (speedInKmPerH > Config.getCurrentConfig().getMaxSpeedKmPerH()) {
+            if (enableOutlierDetection && speedInKmPerH > Config.getCurrentConfig().getOutlierSpeedKmPerH()) {
                 LOG.info("Rejecting event because the measured speed is {} km/h, higher than the max value {} km/h",
-                        speedInKmPerH, Config.getCurrentConfig().getMaxSpeedKmPerH());
-                return this;
+                        speedInKmPerH, Config.getCurrentConfig().getOutlierSpeedKmPerH());
+                // TODO: better way to do this side effect than just running a task from this method? Affects architecture around Event.doApply though
+                CompletableFuture.runAsync(() -> reportOutlier(event));
             }
             lastEventId = lastEvent.getReaderId();
         }
@@ -184,6 +187,21 @@ public final class TeamState {
             }
         }
         return new TeamState(Optional.of(event), newTagFragmentCount, newSpeed, newPredictedSpeed);
+    }
+
+    private void reportOutlier(TagSeenEvent event) {
+        StatusReporter reporter = new StatusReporter(
+                StatusReporter.getRedisURI(),
+                Config.getCurrentConfig().getStatusChannel()
+        );
+
+        String tag = event.getTag().toString();
+        int reader = event.getReaderId();
+        long eventId = event.getId().get();
+        reporter.broadcast(new StatusMessage(
+                StatusMessage.MessageType.READ_OUTLIER,
+                "Tag " + tag + " at reader " + reader + " (event id " + eventId + ")")
+        );
     }
 
     public TeamState addCorrection(int correction) {

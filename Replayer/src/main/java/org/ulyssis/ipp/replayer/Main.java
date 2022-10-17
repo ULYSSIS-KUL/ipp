@@ -29,7 +29,7 @@ public final class Main {
                 Config.fromConfigurationFile(options.getConfigFile()).ifPresent(config -> {
                     if (options.getSpeedFactor() != 1D) {
                         System.out.println("Speed factor is not equal to 1 - remember to " +
-                                "adjust `maxSpeedKmPerH` in the Processor config accordingly!");
+                                "adjust `outlierSpeedKmPerH` in the Processor config accordingly!");
                         // TODO: Maybe there is a cleaner way than requiring the user to do the above.
                     }
                     Config.setCurrentConfig(config);

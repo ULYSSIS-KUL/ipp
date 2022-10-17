@@ -38,6 +38,13 @@ public final class StatusReporter {
     private final Jedis jedis;
     private final String statusChannel;
 
+    private static URI redisURI = null;
+
+    public static void setRedisURI(URI uri) {
+        redisURI = uri;
+    }
+    public static URI getRedisURI() { return redisURI; }
+
     /**
      * Create a new status reporter for the given Redis URI and status channel.
      *

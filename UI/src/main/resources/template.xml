@@ -50,4 +50,7 @@
     <message id="safety-button">
     	${safety} ${button}
     </message>
+    <message id="notification">
+        <div>${notification-text} ${close-button}</div>
+    </message>
 </messages>

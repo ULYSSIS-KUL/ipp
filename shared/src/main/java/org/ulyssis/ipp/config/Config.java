@@ -54,7 +54,7 @@ public class Config {
     private String updatesList = "updates";
     private String updatesSet = "updates";
     private String controlChannel = "control";
-    private double maxSpeedKmPerH = 44.72D; // Default value here is Usain Bolt's top speed
+    private double outlierSpeedKmPerH = 34D; // approximately mean + 4 * std on 24 hour run of 2021 (speeds of almost 32 km/h were achieved between readers)
 
     /**
      * Private constructor used by Jackson
@@ -209,8 +209,8 @@ public class Config {
      * Maximum valid speed, reads will be rejected if the speed between two readers
      * was higher than this value.
      */
-    public double getMaxSpeedKmPerH() {
-        return maxSpeedKmPerH;
+    public double getOutlierSpeedKmPerH() {
+        return outlierSpeedKmPerH;
     }
 
     // TODO: Maybe find some other solution?

@@ -20,10 +20,7 @@ package org.ulyssis.ipp.ui;
 import org.ulyssis.ipp.config.Config;
 import org.ulyssis.ipp.config.Team;
 import org.ulyssis.ipp.ui.state.SharedState;
-import org.ulyssis.ipp.ui.widgets.ContestControlPanel;
-import org.ulyssis.ipp.ui.widgets.HeaderWidget;
-import org.ulyssis.ipp.ui.widgets.LogPanel;
-import org.ulyssis.ipp.ui.widgets.TeamPanel;
+import org.ulyssis.ipp.ui.widgets.*;
 
 import eu.webtoolkit.jwt.WApplication;
 import eu.webtoolkit.jwt.WEnvironment;
@@ -47,6 +44,7 @@ public class UIApplication extends WApplication {
         useStyleSheet(new WLink("/style.css"));
 
         new HeaderWidget(getRoot());
+        new NotificationWidget(getRoot());
         new ContestControlPanel(getRoot());
         new LogPanel(getRoot());
         for (Team team : Config.getCurrentConfig().getTeams()) {

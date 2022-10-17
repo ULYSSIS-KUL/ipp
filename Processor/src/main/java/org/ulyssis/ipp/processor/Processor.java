@@ -99,6 +99,7 @@ public final class Processor implements Runnable {
 
     public Processor(final ProcessorOptions options) {
         Database.setDatabaseURI(options.getDatabaseUri());
+        StatusReporter.setRedisURI(options.getRedisUri());
         try (Connection connection = Database.createConnection(EnumSet.of(READ_WRITE))) {
             if (options.shouldClearDb()) {
                 Database.clearDb(connection);

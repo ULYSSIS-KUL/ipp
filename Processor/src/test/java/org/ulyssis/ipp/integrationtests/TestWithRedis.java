@@ -34,6 +34,7 @@ import org.ulyssis.ipp.processor.Processor;
 import org.ulyssis.ipp.processor.ProcessorOptions;
 import org.ulyssis.ipp.snapshot.Event;
 import org.ulyssis.ipp.snapshot.Snapshot;
+import org.ulyssis.ipp.snapshot.TeamState;
 import org.ulyssis.ipp.status.StatusMessage;
 import org.ulyssis.ipp.updates.TagUpdate;
 import org.ulyssis.ipp.utils.JedisHelper;

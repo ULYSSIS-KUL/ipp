@@ -1,6 +1,6 @@
 {
     "trackLength" : 520,
-    "maxSpeedKmPerH": 35.25,
+    "outlierSpeedKmPerH": 35.25,
     "speedwayURIs" : [
         "tcp://10.0.0.1",
         "tcp://10.0.0.2",

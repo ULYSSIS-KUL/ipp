@@ -48,8 +48,8 @@ public final class Score {
         private final int nb; // The team number
         private final String name; // The name of the team
         private final int laps; // The number of laps
-        private final OptionalDouble position; // The predicted position of the team, not present if FinalScore
-        private final OptionalDouble speed; // The predicted speed of the team, not present if FinalScore
+        private final OptionalDouble position; // The predicted position of the team, not present if FinalScore or FinalHour
+        private final OptionalDouble speed; // The predicted speed of the team, not present if FinalScore or FinalHour
 
         private final double nonLimitedPosition; // The predicted position, not limited
 
@@ -151,9 +151,9 @@ public final class Score {
                 double speed = t.getPredictedSpeed();
                 if (Double.isNaN(speed)) {
                     teams.add(new Team(lap, team.getTeamNb(), team.getName(), 0,
-                            this.status != Status.FinalScore ? OptionalDouble.of(0) : OptionalDouble.empty(),
+                            doubleOrEmpty(this.status, 0),
                             0,
-                            this.status != Status.FinalScore ? OptionalDouble.of(0) : OptionalDouble.empty()));
+                            doubleOrEmpty(this.status, 0)));
                 } else {
                     TagSeenEvent lastEvent = t.getLastTagSeenEvent().get();
                     Instant lastTime = t.getLastTagSeenEvent().get().getTime();
@@ -163,16 +163,24 @@ public final class Score {
                     double position = nonLimitedPosition;
                     if (position > config.getTrackLength()) position = config.getTrackLength();
                     teams.add(new Team(lap, team.getTeamNb(), team.getName(), t.getNbLaps(),
-                            this.status != Status.FinalScore ? OptionalDouble.of(position / config.getTrackLength()) : OptionalDouble.empty(),
+                            doubleOrEmpty(this.status, position / config.getTrackLength()),
                             nonLimitedPosition / config.getTrackLength(),
-                            this.status != Status.FinalScore ? OptionalDouble.of(speed) : OptionalDouble.empty()));
+                            doubleOrEmpty(this.status, speed)));
                 }
             } else {
                 teams.add(new Team(lap, team.getTeamNb(), team.getName(), 0,
-                        this.status != Status.FinalScore ? OptionalDouble.of(0) : OptionalDouble.empty(),
+                        doubleOrEmpty(this.status,0),
                         0,
-                        this.status != Status.FinalScore ? OptionalDouble.of(0) : OptionalDouble.empty()));
+                        doubleOrEmpty(this.status,0)));
             }
+        }
+    }
+
+    private static OptionalDouble doubleOrEmpty(Status status, double d) {
+        if (status == Status.FinalScore || status == Status.FinalHour) {
+            return OptionalDouble.empty();
+        } else {
+            return OptionalDouble.of(d);
         }
     }
 

@@ -1,0 +1,114 @@
+{
+    "trackLength" : 518,
+        "speedwayURIs": [
+                "tcp://192.168.0.1",
+                "tcp://192.168.0.2",
+                "tcp://192.168.0.3"
+        ],
+    "readers" : [
+        {
+            "uri": "redis://192.168.0.10",
+            "position": 0
+        },
+        {
+            "uri" : "redis://192.168.0.11",
+            "position": 159
+        },
+        {
+            "uri" : "redis://192.168.0.12",
+            "position": 284
+        }
+    ],
+    "teams" : [
+        {
+            "teamNb": 1,
+            "name": "Apolloon",
+            "tags": ["002420220001"]
+        },
+        {
+            "teamNb": 2,
+            "name": "Ekonomika",
+            "tags": ["002420220002"]
+        },
+        {
+            "teamNb": 3,
+            "name": "LBK",
+            "tags": ["002420220003"]
+        },
+        {
+            "teamNb": 4,
+            "name": "VTK",
+            "tags": ["002420220004"]
+        },
+        {
+            "teamNb": 5,
+            "name": "Wina",
+            "tags": ["002420220005"]
+        },
+        {
+            "teamNb": 6,
+            "name": "OKeR",
+            "tags": ["002420220006"]
+        },
+        {
+            "teamNb": 7,
+            "name": "Psychokring",
+            "tags": ["002420220007"]
+        },
+        {
+            "teamNb": 8,
+            "name": "Thomas Morus",
+            "tags": ["002420220008"]
+        },
+        {
+            "teamNb": 9,
+            "name": "Atmosphere",
+            "tags": ["002420220009"]
+        },
+        {
+            "teamNb": 10,
+            "name": "Runner's High",
+            "tags": ["002420220010"]
+        },
+        {
+            "teamNb": 11,
+            "name": "Industria",
+            "tags": ["002420220011"]
+        },
+        {
+            "teamNb": 12,
+            "name": "Farmaceutica",
+            "tags": ["002420220012"]
+        },
+        {
+            "teamNb": 13,
+            "name": "VRG-Crimen",
+            "tags": ["002420220013"]
+        },
+        {
+            "teamNb": 14,
+            "name": "Politika",
+            "tags": ["002420220014"]
+        },
+        {
+            "teamNb": 15,
+            "name": "Run for Specials",
+            "tags": ["002420220015"]
+        },
+        {
+            "teamNb": 16,
+            "name": "Medica",
+            "tags": ["002420220016"]
+        },
+        {
+            "teamNb": 17,
+            "name": "Pedal",
+            "tags": ["002420220017"]
+        },
+        {
+            "teamNb": 18,
+            "name": "Lerkeveld",
+            "tags": ["002420220018"]
+        }
+    ]
+}

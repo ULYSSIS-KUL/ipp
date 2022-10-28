@@ -1,0 +1,94 @@
+{
+    "trackLength" : 500,
+	"speedwayURIs": [
+		"tcp://192.168.0.1",
+		"tcp://192.168.0.2"
+	],
+    "readers" : [
+        {
+            "uri" : "redis://192.168.0.10",
+            "position" : 0.0
+        },
+        {
+            "uri" : "redis://192.168.0.11",
+            "position" : 200
+        }
+    ],
+    "teams" : [
+        {
+            "teamNb": 1,
+            "name": "Absoc - Omnes",
+            "tags": ["001020220001"]
+        },
+        {
+            "teamNb": 2,
+            "name": "Argonaut&Klio",
+            "tags": ["001020220002"]
+        },
+        {
+            "teamNb": 3,
+            "name": "Brafuselistra",
+            "tags": ["001020220003"]
+        },
+        {
+            "teamNb": 4,
+            "name": "Calesa",
+            "tags": ["001020220004"]
+        },
+        {
+            "teamNb": 5,
+            "name": "Chillrijk",
+            "tags": ["001020220005"]
+        },
+        {
+            "teamNb": 6,
+            "name": "Chi+B&G+Fen",
+            "tags": ["001020220006"]
+        },
+        {
+            "teamNb": 7,
+            "name": "ELSA+CAPITANT",
+            "tags": ["001020220007"]
+        },
+        {
+            "teamNb": 8,
+            "name": "ESN",
+            "tags": ["001020220008"]
+        },
+        {
+            "teamNb": 9,
+            "name": "Kinesia",
+            "tags": ["001020220009"]
+        },
+        {
+            "teamNb": 10,
+            "name": "MODULOR&Lingua",
+            "tags": ["001020220010"]
+        },
+        {
+            "teamNb": 11,
+            "name": "PréTDloop",
+            "tags": ["001020220011"]
+        },
+        {
+            "teamNb": 12,
+            "name": "PSW",
+            "tags": ["001020220012"]
+        },
+        {
+            "teamNb": 13,
+            "name": "Sofia",
+            "tags": ["001020220013"]
+        },
+        {
+            "teamNb": 14,
+            "name": "TechMedHolla",
+            "tags": ["001020220014"]
+        },
+        {
+            "teamNb": 15,
+            "name": "Wikings-NSK",
+            "tags": ["001020220015"]
+        }
+    ]
+}

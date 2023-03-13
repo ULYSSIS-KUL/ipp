@@ -7,7 +7,7 @@ Hardware
 We gebruiken de volgende componenten:
 
 - 3 x telpunt, met:
-    - Impinj speedrunner lezer met antenne
+    - Impinj speedway R220 lezer met circulair gepolariseerde antenne
     - Raspberry Pi
     - Switch
 - 2 x laptop

@@ -18,6 +18,7 @@
 package org.ulyssis.ipp.processor;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ulyssis.ipp.config.Config;
@@ -79,7 +80,7 @@ import static org.ulyssis.ipp.processor.Database.ConnectionFlags.READ_WRITE;
 public final class Processor implements Runnable {
     private static final Logger LOG = LogManager.getLogger(Processor.class);
 
-    private final BlockingQueue<Event> eventQueue;
+    private final BlockingQueue<List<Event>> eventQueue;
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     private final ConcurrentMap<Event, Consumer<Boolean> > eventCallbacks;
@@ -256,8 +257,8 @@ public final class Processor implements Runnable {
         notifyStarted();
         try {
             while (!Thread.currentThread().isInterrupted()) {
-                Event event = eventQueue.take();
-                processEvent(event);
+                List<Event> events = eventQueue.take();
+                processEvents(events);
                 // TODO(Roel): Do deferred event processing later!
             }
         } catch (InterruptedException ignored) {
@@ -316,7 +317,7 @@ public final class Processor implements Runnable {
                 }
             }
             Jedis subJedis = JedisHelper.get(uri);
-            ReaderListener listener = new ReaderListener(readerId, this::queueEvent, lastUpdate);
+            ReaderListener listener = new ReaderListener(readerId, this::queueEvents, lastUpdate);
             readerListeners.add(listener);
             Thread thread = new Thread(() -> {
                 try {
@@ -343,23 +344,25 @@ public final class Processor implements Runnable {
         executorService.submit(() -> trySpawnReaderListener(readerId));
     }
 
-    private void processEvent(Event event) {
-        logProcessEvent(event);
+    private void processEvents(List<Event> events) {
         Connection connection = null;
         Snapshot oldSnapshot = this.snapshot;
         try {
             connection = Database.createConnection(EnumSet.of(READ_WRITE));
-            Event firstEvent = event;
-            if (event.isUnique()) {
-                Optional<Event> other = Event.loadUnique(connection, event.getClass());
-                if (other.isPresent()) {
-                    other.get().setRemoved(connection, true);
-                    if (!other.get().getTime().isAfter(event.getTime())) {
-                        firstEvent = other.get();
+            Event firstEvent = events.get(0);
+            for (Event event : events) {
+                logProcessEvent(event);
+                if (event.isUnique()) {
+                    Optional<Event> other = Event.loadUnique(connection, event.getClass());
+                    if (other.isPresent()) {
+                        other.get().setRemoved(connection, true);
+                        if (!other.get().getTime().isAfter(firstEvent.getTime())) {
+                            firstEvent = other.get();
+                        }
                     }
                 }
+                event.save(connection);
             }
-            event.save(connection);
             Snapshot snapshotToUpdateFrom = this.snapshot;
             if (!firstEvent.getTime().isAfter(this.snapshot.getSnapshotTime())) {
                 LOG.debug("Event before current snapshot, loading snapshot before");
@@ -367,16 +370,16 @@ public final class Processor implements Runnable {
                 if (s.isPresent()) snapshotToUpdateFrom = s.get();
                 else snapshotToUpdateFrom = new Snapshot(Instant.EPOCH);
             }
-            List<Event> events;
+            List<Event> eventsSinceFirstEvent;
             Snapshot.deleteAfter(connection, snapshotToUpdateFrom);
             LOG.debug("Updating from snapshot: {}", snapshotToUpdateFrom.getId());
             if (snapshotToUpdateFrom.getId().isPresent()) {
                 assert snapshotToUpdateFrom.getEventId().isPresent();
-                events = Event.loadAfter(connection, snapshotToUpdateFrom.getSnapshotTime(), snapshotToUpdateFrom.getEventId().get());
+                eventsSinceFirstEvent = Event.loadAfter(connection, snapshotToUpdateFrom.getSnapshotTime(), snapshotToUpdateFrom.getEventId().get());
             } else {
-                events = Event.loadAll(connection);
+                eventsSinceFirstEvent = Event.loadAll(connection);
             }
-            for (Event e : events) {
+            for (Event e : eventsSinceFirstEvent) {
                 if (!e.isRemoved()) {
                     snapshotToUpdateFrom = e.apply(snapshotToUpdateFrom);
                     snapshotToUpdateFrom.save(connection);
@@ -387,9 +390,11 @@ public final class Processor implements Runnable {
             connection.commit();
             // TODO: Provide a sensible message for NEW_SNAPSHOT?
             statusReporter.broadcast(new StatusMessage(StatusMessage.MessageType.NEW_SNAPSHOT, "New snapshot!"));
-            if (eventCallbacks.containsKey(event)) {
-                eventCallbacks.get(event).accept(true);
-                eventCallbacks.remove(event);
+            for (Event event : events) {
+                if (eventCallbacks.containsKey(event)) {
+                    eventCallbacks.get(event).accept(true);
+                    eventCallbacks.remove(event);
+                }
             }
         } catch (SQLException | IOException e) {
             LOG.error("Error when handling event!", e);
@@ -422,19 +427,22 @@ public final class Processor implements Runnable {
     }
 
     /**
-     * Queue a tag update for processing.
+     * Queue a single event for processing, with a callback
      */
-    private void queueEvent(Event event) {
+    private void queueEvent(Event event, Consumer<Boolean> callback) {
         try {
-            eventQueue.put(event);
+            eventCallbacks.put(event, callback);
+            eventQueue.put(ImmutableList.of(event));
         } catch (InterruptedException ignored) {
         }
     }
 
-    private void queueEvent(Event event, Consumer<Boolean> callback) {
+    /**
+     * Queue a batch of events for processing
+     */
+    private void queueEvents(List<Event> events) {
         try {
-            eventCallbacks.put(event, callback);
-            eventQueue.put(event);
+            eventQueue.put(events);
         } catch (InterruptedException ignored) {
         }
     }
